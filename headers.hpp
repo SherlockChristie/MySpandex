@@ -12,14 +12,11 @@
 #define WORDS_OFF lg2(WORDS_PER_LINE) // 2
 
 #define MAX_RETRY 1
-#define MAX_DEVS 2
-// 为方便计假设只有三种设备且每种设备都只有一个Cache，用下文定义的 Device type 区分;
-// 实际上 MAX_DEVS = lg2(3); 不过上文定义的lg2函数无法处理3;
 
 #define WORD_MASK ((1 << BYTES_PER_WORD) - 1)
 
 #define DEV_ROW 64                             // 2^6
-#define DEV_COL BYTES_PER_WORD *WORDS_PER_LINE // byte addressing;
+#define DEV_COL BYTES_PER_WORD*WORDS_PER_LINE // byte addressing;
 
 #define LLC_ROW 1024 // 2^10
 #define LLC_COL DEV_COL
@@ -36,13 +33,23 @@
 #define LLC_TAG_BITS ADDR_SIZE - LLC_INDEX_BITS - WORDS_OFF - BYTES_OFF // 18
 // 仅后4位有值，高位全为0; 但是保持地址位宽一致;
 
-#define STATE_BITS lg2(4) * WORDS_PER_LINE
+#define STATE_BITS 2               // 2 bits for a line (Invalid, Valid or Shared);
+#define STATE_WORDS WORDS_PER_LINE // 1 bit for a word;
+// Described in Section III-B:
+// To limit tag and state overhead, allocation occurs at line granularity.
+// For each line, two bits indicate whether the line is Invalid, Valid or Shared.
+// For each word within the cache line, a single bit tracks whether the word is Owned in a remote cache.
+// For each Owned word, the data field itself stores the ID of the remote owner.
+#define MAX_DEVS 2 // 2 bits for both sharers and owners ID;
+// 为方便计假设只有三种设备且每种设备都只有一个 Cache，用下文定义的 Device type 区分;
+// 实际上 MAX_DEVS = lg2(3); 不过上文定义的lg2函数无法处理3;
 
 // Granularity type
 #define GRAN_WORD 0
 #define GRAN_LINE 1
 
 /// Device type
+// same with TU's type
 #define CPU 0
 #define GPU 1
 #define ACC 2
@@ -80,6 +87,7 @@
 #define LLC_S 2
 // O means the data is Owned within a device cache, not LLC.
 // ???
+#define LLC_O 3
 
 /// LLC unstable states
 #define LLC_IV 1

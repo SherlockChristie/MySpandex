@@ -1,7 +1,7 @@
 #include "classes.hpp"
 #include <bitset>
 
-void breakdown(LLC_ADDR &llc_addr,addr_t addr)
+void LLC::breakdown(LLC_ADDR &llc_addr, addr_t addr)
 {
     llc_addr.b_off = BitSub<ADDR_SIZE, BYTES_OFF>(addr, 0);
     llc_addr.w_off = BitSub<ADDR_SIZE, WORDS_OFF>(addr, BYTES_OFF);
@@ -9,12 +9,12 @@ void breakdown(LLC_ADDR &llc_addr,addr_t addr)
     llc_addr.tag = BitSub<ADDR_SIZE, LLC_TAG_BITS>(addr, LLC_INDEX_BITS + WORDS_OFF + BYTES_OFF);
 };
 
-void fetch_line(LLC &llc, LLC_ADDR &llc_addr,LLC_DATA &llc_data)
+void LLC::fetch_line(LLC_ADDR &llc_addr, LLC_DATA &llc_data)
 {
     unsigned long llc_index = (llc_addr.index).to_ulong();
-    llc_data.state = llc.state_buf[llc_index];
-    llc_data.sharers = llc.sharers_buf[llc_index];
-    if ((llc.tag_buf[llc_index] != llc_addr.tag) || (state == LLC_I))
+    llc_data.state = state_l_buf[llc_index];
+    llc_data.sharers = sharers_buf[llc_index];
+    if ((tag_buf[llc_index] != llc_addr.tag) || (llc_data.state == LLC_I))
     {
         llc_data.hit = 0;
         for (int i = 0; i < WORDS_PER_LINE; i++)
@@ -32,7 +32,7 @@ void fetch_line(LLC &llc, LLC_ADDR &llc_addr,LLC_DATA &llc_data)
         {
             for (int j = 0; j < BYTES_PER_WORD; j++)
             {
-                llc_data.data_line[i][j] = llc.cache[llc_index][i * BYTES_PER_WORD + j];
+                llc_data.data_line[i][j] = cache[llc_index][i * BYTES_PER_WORD + j];
             }
         }
     }
@@ -62,54 +62,117 @@ void fetch_line(LLC &llc, LLC_ADDR &llc_addr,LLC_DATA &llc_data)
 //     }
 // };
 
-void LLC::rcv_req(TU_REQ &req)
+void LLC::forwards(TU &owner){};
+
+void LLC::rcv_req(TU &tu)
 // Behaviour when LLC receives an external request from TU (Table III).
 {
-    LLC_ADDR llc_addr;
-    breakdown(llc_addr,req.addr);
-    LLC_DATA llc_data;
-    fetch_line(llc_data, llc_addr);
-    unsigned long llc_index = (llc_addr.index).to_ulong();
-    state_t llc_state = state_buf[llc_index];
+    breakdown(llc_addr, tu.req.addr);
+    fetch_line(llc_addr, llc_data);
 
-    if ((tag_buf[llc_index] != llc_addr.tag) || (llc_state == LLC_I))
+    TU owner;
+
+    // if (!llc_data.hit)
+    // {
+    //     // go to main memory;
+    // }
+    // else
     {
-        // go to main memory;
-    }
-    else
-    {
-        switch (req.tu_msg)
+        switch (tu.req.tu_msg)
         {
         case REQ_V:
         {
-            if (llc_state == LLC_V || llc_state == LLC_S)
+            if (llc_data.state == LLC_V || llc_data.state == LLC_S)
             {
+            }
+            else if (llc_data.state == LLC_O)
+            {
+                req.llc_msg = FWD_REQ_V;
+                forwards(owner, req);
             };
             break;
         }
         case REQ_S:
-        {
-
-            break;
-        }
+            // ReqS2 not used;
+            {
+                if (llc_data.state == LLC_S) // ReqS1;
+                {
+                    // no blocking state to S;
+                    llc_data.state = LLC_S;
+                }
+                else if (llc_data.state == LLC_O)
+                {
+                    if (owner.type == CPU) // ReqS1;
+                    {
+                        // having blocking states;
+                        llc_data.state = LLC_OS;
+                        req.llc_msg = FWD_REQ_S;
+                    }
+                    else // ReqS3;
+                    {
+                        llc_data.state = LLC_O;
+                        req.llc_msg = FWD_REQ_Odata;
+                    }
+                    forwards(owner, req);
+                }
+                // ReqS3;
+                else if (llc_data.state == LLC_V)
+                {
+                    llc_data.state = LLC_O;
+                }
+                break;
+            }
         case REQ_WT:
         {
+            if (llc_data.state == LLC_O)
+            {
+                req.llc_msg = FWD_REQ_O;
+                forwards(owner, req);
+            }
+            llc_data.state = LLC_V;
             break;
         }
         case REQ_O:
         {
+            if (llc_data.state == LLC_O)
+            {
+                req.llc_msg = FWD_REQ_O;
+                forwards(owner, req);
+            }
+            llc_data.state = LLC_O;
             break;
         }
         case REQ_WTdata:
         {
+            if (llc_data.state == LLC_O)
+            {
+                req.llc_msg = FWD_RVK_O;
+                forwards(owner, req);
+                // having blocking states;
+                llc_data.state = LLC_OV;
+            }
+            else if (llc_data.state == LLC_V)
+            {
+            }
+            else if (llc_data.state == LLC_S)
+            {
+                // having blocking states;
+                llc_data.state = LLC_SV;
+            }
             break;
         }
         case REQ_Odata:
         {
+            if (llc_data.state == LLC_V || llc_data.state == LLC_S)
+            {
+            }
             break;
         }
         case REQ_WB:
         {
+            if (llc_data.state == LLC_V || llc_data.state == LLC_S)
+            {
+            }
             break;
         }
         }

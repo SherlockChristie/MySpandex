@@ -224,7 +224,7 @@ inline int LLC::send_inv_with_sharer_list(line_addr_t addr, sharers_t sharer_lis
 
 /// write reqs buf
 void LLC::fill_reqs(mix_msg_t msg, cache_id_t req_id, addr_breakdown_llc_t addr_br, llc_tag_t tag_estall, llc_way_t way_hit,
-                    llc_unstable_state_t state, hprot_t hprot, word_t word, line_t line, word_mask_t word_mask, bitset<LLC_REQS_BITS> reqs_i)
+                    llc_unstable_state_line_t state, hprot_t hprot, word_t word, line_t line, word_mask_t word_mask, bitset<LLC_REQS_BITS> reqs_i)
 {
     LLC_FILL_REQS;
 
