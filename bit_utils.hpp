@@ -5,6 +5,7 @@
 #include <bitset>
 #include <type_traits>
 #include <limits>
+#include <cstring> 
 // using namespace std;
 
 constexpr int lg2(int x)
@@ -36,5 +37,10 @@ std::bitset<N2> BitSub(std::bitset<N1> &b, std::size_t offset)
 {
     return std::bitset<N2>((b >> offset).to_ullong());
 }
+
+
+// void LineCopy(line_t& dest, const line_t* src) {
+//     std::memcpy(dest, src, sizeof(line_t));
+// }
 
 #endif // BIT_UTILS_HPP

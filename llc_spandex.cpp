@@ -58,7 +58,7 @@ void LLC::read_set(const llc_addr_t base, const llc_way_t way_offset)
 
 
 void LLC::send_rsp_out(coh_msg_t coh_msg, line_addr_t addr, line_t line, cache_id_t req_id,
-                              cache_id_t dest_id, invack_cnt_t invack_cnt, word_offset_t word_offset, word_mask_t word_mask)
+                              cache_id_t dest_id, invack_cnt_t invack_cnt, word_offset_t_t word_offset_t, word_mask_t word_mask)
 {
     SEND_RSP_OUT;
     llc_rsp_out_t<CACHE_ID_WIDTH> rsp_out;
@@ -68,7 +68,7 @@ void LLC::send_rsp_out(coh_msg_t coh_msg, line_addr_t addr, line_t line, cache_i
     rsp_out.req_id = req_id;
     rsp_out.dest_id = dest_id;
     rsp_out.invack_cnt = invack_cnt;
-    rsp_out.word_offset = word_offset;
+    rsp_out.word_offset_t = word_offset_t;
     rsp_out.word_mask = word_mask;
     while (!llc_rsp_out.nb_can_put())
         wait();
@@ -91,7 +91,7 @@ void LLC::send_fwd_out(mix_msg_t coh_msg, line_addr_t addr, cache_id_t req_id, c
 }
 
 void LLC::send_dma_rsp_out(coh_msg_t coh_msg, line_addr_t addr, line_t line, llc_coh_dev_id_t req_id,
-                                  cache_id_t dest_id, invack_cnt_t invack_cnt, word_offset_t word_offset)
+                                  cache_id_t dest_id, invack_cnt_t invack_cnt, word_offset_t_t word_offset_t)
 {
     SEND_DMA_RSP_OUT;
     llc_rsp_out_t<LLC_COH_DEV_ID_WIDTH> rsp_out;
@@ -101,7 +101,7 @@ void LLC::send_dma_rsp_out(coh_msg_t coh_msg, line_addr_t addr, line_t line, llc
     rsp_out.req_id = req_id;
     rsp_out.dest_id = dest_id;
     rsp_out.invack_cnt = invack_cnt;
-    rsp_out.word_offset = word_offset;
+    rsp_out.word_offset_t = word_offset_t;
     while (!llc_dma_rsp_out.nb_can_put())
         wait();
     llc_dma_rsp_out.nb_put(rsp_out);
@@ -1589,11 +1589,11 @@ void LLC::ctrl()
                         LLC_DMA_READ_BURST;
 
                         dma_length_t valid_words;
-                        word_offset_t dma_read_woffset;
+                        word_offset_t_t dma_read_woffset;
                         invack_cnt_t dma_info;
 
                         if (dma_start)
-                            dma_read_woffset = dma_req_in.word_offset;
+                            dma_read_woffset = dma_req_in.word_offset_t;
                         else
                             dma_read_woffset = 0;
 
@@ -1641,7 +1641,7 @@ void LLC::ctrl()
                     { /// is_dma_write_to_resume
                         LLC_DMA_WRITE_BURST;
 
-                        word_offset_t dma_write_woffset = dma_req_in.word_offset;
+                        word_offset_t_t dma_write_woffset = dma_req_in.word_offset_t;
                         dma_length_t valid_words = dma_req_in.valid_words + 1;
                         bool misaligned;
 

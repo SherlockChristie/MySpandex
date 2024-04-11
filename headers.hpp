@@ -6,14 +6,15 @@
 #include "bit_utils.hpp"
 
 #define ADDR_SIZE 32     // 32-bit address;
-#define BYTES_PER_WORD 4 // uint8_t for byte, uint32_t for word;
+#define BITS_PER_BYTE 8
+#define BYTES_PER_WORD 4 // uint8_t for byte, uint32_t for word; // no, all use bitset instead;
 #define WORDS_PER_LINE 4
 #define BYTES_OFF lg2(BYTES_PER_WORD) // 2
 #define WORDS_OFF lg2(WORDS_PER_LINE) // 2
 
 #define MAX_RETRY 1
 
-#define WORD_MASK ((1 << BYTES_PER_WORD) - 1)
+// #define WORD_MASK ((1 << BYTES_PER_WORD) - 1)
 
 #define DEV_ROW 64                             // 2^6
 #define DEV_COL BYTES_PER_WORD*WORDS_PER_LINE // byte addressing;
@@ -33,8 +34,9 @@
 #define LLC_TAG_BITS ADDR_SIZE - LLC_INDEX_BITS - WORDS_OFF - BYTES_OFF // 18
 // 仅后4位有值，高位全为0; 但是保持地址位宽一致;
 
-#define STATE_BITS 2               // 2 bits for a line (Invalid, Valid or Shared);
+#define STATE_LINE 2               // 2 bits for a line (Invalid, Valid or Shared);
 #define STATE_WORDS WORDS_PER_LINE // 1 bit for a word;
+#define STATE_BITS STATE_LINE+STATE_WORDS // no need to separate them;
 // Described in Section III-B:
 // To limit tag and state overhead, allocation occurs at line granularity.
 // For each line, two bits indicate whether the line is Invalid, Valid or Shared.

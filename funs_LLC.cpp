@@ -12,18 +12,20 @@ void LLC::breakdown(LLC_ADDR &llc_addr, addr_t addr)
 void LLC::fetch_line(LLC_ADDR &llc_addr, LLC_DATA &llc_data)
 {
     unsigned long llc_index = (llc_addr.index).to_ulong();
-    llc_data.state = state_l_buf[llc_index];
+    line_t temp = {0};
+    llc_data.state = state_buf[llc_index];
     llc_data.sharers = sharers_buf[llc_index];
     if ((tag_buf[llc_index] != llc_addr.tag) || (llc_data.state == LLC_I))
     {
         llc_data.hit = 0;
-        for (int i = 0; i < WORDS_PER_LINE; i++)
-        {
-            for (int j = 0; j < BYTES_PER_WORD; j++)
-            {
-                llc_data.data_line[i][j] = 0;
-            }
-        }
+        // LineCopy(llc_data.data_line,&temp);
+        // for (int i = 0; i < WORDS_PER_LINE; i++)
+        // {
+        //     for (int j = 0; j < BYTES_PER_WORD; j++)
+        //     {
+        //         llc_data.data_line[i][j] = 0;
+        //     }
+        // }
     }
     else
     {
@@ -88,7 +90,7 @@ void LLC::rcv_req(TU &tu)
             else if (llc_data.state == LLC_O)
             {
                 req.llc_msg = FWD_REQ_V;
-                forwards(owner, req);
+                forwards(owner);
             };
             break;
         }
@@ -113,7 +115,7 @@ void LLC::rcv_req(TU &tu)
                         llc_data.state = LLC_O;
                         req.llc_msg = FWD_REQ_Odata;
                     }
-                    forwards(owner, req);
+                    forwards(owner);
                 }
                 // ReqS3;
                 else if (llc_data.state == LLC_V)
@@ -127,7 +129,7 @@ void LLC::rcv_req(TU &tu)
             if (llc_data.state == LLC_O)
             {
                 req.llc_msg = FWD_REQ_O;
-                forwards(owner, req);
+                forwards(owner);
             }
             llc_data.state = LLC_V;
             break;
@@ -137,7 +139,7 @@ void LLC::rcv_req(TU &tu)
             if (llc_data.state == LLC_O)
             {
                 req.llc_msg = FWD_REQ_O;
-                forwards(owner, req);
+                forwards(owner);
             }
             llc_data.state = LLC_O;
             break;
@@ -147,7 +149,7 @@ void LLC::rcv_req(TU &tu)
             if (llc_data.state == LLC_O)
             {
                 req.llc_msg = FWD_RVK_O;
-                forwards(owner, req);
+                forwards(owner);
                 // having blocking states;
                 llc_data.state = LLC_OV;
             }
@@ -163,15 +165,34 @@ void LLC::rcv_req(TU &tu)
         }
         case REQ_Odata:
         {
-            if (llc_data.state == LLC_V || llc_data.state == LLC_S)
+
+            if (llc_data.state == LLC_O)
             {
+                req.llc_msg = FWD_REQ_Odata;
+                forwards(owner);
+                // llc_data.state == LLC_O; // no blocking states;
+            }
+            else if (llc_data.state == LLC_V)
+            {
+                // no blocking states;
+                llc_data.state == LLC_O;
+            }
+            else if (llc_data.state == LLC_S)
+            {
+                // having blocking states;
+                llc_data.state = LLC_SO;
             }
             break;
         }
         case REQ_WB:
         {
-            if (llc_data.state == LLC_V || llc_data.state == LLC_S)
+            if (tu.type == owner.type)
             {
+                llc_data.state == LLC_V;
+            }
+            else
+            {
+                // invalid operation, no response;
             }
             break;
         }
