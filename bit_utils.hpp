@@ -7,6 +7,8 @@
 #include <limits>
 #include <cstring> 
 // using namespace std;
+#include "consts.hpp"
+#include "blocks.hpp"
 
 constexpr int lg2(int x)
 {
@@ -38,9 +40,30 @@ std::bitset<N2> BitSub(std::bitset<N1> &b, std::size_t offset)
     return std::bitset<N2>((b >> offset).to_ullong());
 }
 
+void LineCopy(line_t& dest, const line_t& src) {
+    std::memcpy(dest, src, sizeof(line_t));
+}
 
-// void LineCopy(line_t& dest, const line_t* src) {
-//     std::memcpy(dest, src, sizeof(line_t));
+// not a good function.
+// void WordIns(word_t word, word_offset_t offset, line_t *line)
+// {
+//     byte_t *byte_off = (byte_t *)line;
+//     byte_off += (offset.to_ulong()) * BYTES_PER_WORD;
+//     for(int i = 0; i <BYTES_PER_WORD;i++)
+//     {
+//         *byte_off++ = *word++;
+//     }
 // }
+
+void WordIns(word_t word, word_offset_t offset, line_t line)
+{
+    uint8_t byte_off = (offset.to_ulong()) * BYTES_PER_WORD;
+    printf("%d\n", byte_off);
+    for (int i = 0; i < BYTES_PER_WORD; i++)
+    {
+        line[byte_off] = word[i];
+        byte_off++;
+    }
+}
 
 #endif // BIT_UTILS_HPP

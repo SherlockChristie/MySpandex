@@ -9,7 +9,7 @@ void DEV::breakdown(DEV_ADDR &dev_addr, addr_t addr)
     dev_addr.tag = BitSub<ADDR_SIZE, DEV_TAG_BITS>(addr, DEV_INDEX_BITS + WORDS_OFF + BYTES_OFF);
 };
 
-void DEV::send_rsp(uint8_t msg, uint8_t req_id, bool to_req, addr_t line_addr, line_t *line)
+void DEV::send_rsp(uint8_t msg, uint8_t req_id, bool to_req, addr_t line_addr, line_t &line)
 {
     rsp.dev_msg = msg;
     rsp.req_id = req_id;
@@ -30,7 +30,7 @@ void DEV::snd_rsp(LLC_REQ &fwd_in)
     case FWD_INV:
     {
         // ADD_COVERAGE("do_fwd_fwd_stall_INV_SPDX");
-        if (reqs[reqs_fwd_stall_i].state == DEV_IS)
+        if (req[reqs_fwd_stall_i].state == DEV_IS)
         {
             reqs[reqs_fwd_stall_i].state = DEV_II;
         }

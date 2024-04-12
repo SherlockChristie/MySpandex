@@ -1,13 +1,12 @@
+#ifndef __CONSTS_HPP__
+#define __CONSTS_HPP__
+
 // #include <cmath>
-
-#ifndef __SPANDEX_CONSTS_SVH__
-#define __SPANDEX_CONSTS_SVH__
-
 #include "bit_utils.hpp"
 
 #define ADDR_SIZE 32     // 32-bit address;
 #define BITS_PER_BYTE 8
-#define BYTES_PER_WORD 4 // uint8_t for byte, uint32_t for word; // no, all use bitset instead;
+#define BYTES_PER_WORD 4 // uint8_t for byte, uint32_t for word;
 #define WORDS_PER_LINE 4
 #define BYTES_OFF lg2(BYTES_PER_WORD) // 2
 #define WORDS_OFF lg2(WORDS_PER_LINE) // 2
@@ -136,4 +135,4 @@
 #define RSP_WTdata 8
 #define RSP_WB_ACK 9
 
-#endif /// __SPANDEX_CONSTS_SVH__
+#endif // __CONSTS_HPP__

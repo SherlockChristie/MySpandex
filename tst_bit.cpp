@@ -2,7 +2,7 @@
 #include <bitset> // 包含 bitset 头文件  
 #include <type_traits>
 #include <limits>
-#define BYTES_PER_WORD 8
+#define BYTES_PER_WORD 4
 
 constexpr std::size_t ULONGLONG_BITS = std::numeric_limits<unsigned long long>::digits;
 // Usage: new = BitCat(a,b);

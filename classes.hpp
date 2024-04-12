@@ -1,7 +1,10 @@
+#ifndef __CLASSES_HPP__
+#define __CLASSES_HPP__
+
 #include <cstdint> // For uint8_t, uint32_t etc.
 #include <cmath>
-#include "headers.hpp"
-#include "cache_block.hpp"
+#include "consts.hpp"
+#include "blocks.hpp"
 using namespace std;
 
 class DEV
@@ -123,3 +126,5 @@ public:
 //     LLC_DATA_ADDR addr;
 //     line_t data_line;
 // };
+
+#endif // __CLASSES_HPP__

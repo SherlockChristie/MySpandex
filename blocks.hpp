@@ -1,23 +1,27 @@
+#ifndef __BLOCKS_HPP__
+#define __BLOCKS_HPP__
+
 #include <cstdint> // For uint8_t, uint32_t etc.
 #include <cmath>
 #include <bitset>
-#include "headers.hpp"
+#include "consts.hpp"
 using namespace std;
 
 /*
  * Cache data types
  */
-// typedef uint8_t byte_t;
+typedef uint8_t byte_t;
 // typedef byte_t word_t[BYTES_PER_WORD];
 // typedef word_t line_t[WORDS_PER_LINE];
 // 不要用二级数组来定义，会引发令人恼怒的指针问题;
-// typedef byte_t word_t[BYTES_PER_WORD];
-// typedef byte_t line_t[BYTES_PER_WORD*WORDS_PER_LINE];
+typedef byte_t word_t[BYTES_PER_WORD];
+typedef byte_t line_t[BYTES_PER_WORD*WORDS_PER_LINE];
 
+// bitset头文件只支持相同位宽的操作数操作，不能像Verilog自动补0，写bitset函数十分不方便，还是用数组吧;
 // 干脆不用数组的思想而用位掩码的思想;
-typedef bitset<BITS_PER_BYTE> byte_t;
-typedef bitset<BITS_PER_BYTE*BYTES_PER_WORD> word_t;
-typedef bitset<BITS_PER_BYTE*BYTES_PER_WORD*WORDS_PER_LINE> line_t;
+// typedef bitset<BITS_PER_BYTE> byte_t;
+// typedef bitset<BITS_PER_BYTE*BYTES_PER_WORD> word_t;
+// typedef bitset<BITS_PER_BYTE*BYTES_PER_WORD*WORDS_PER_LINE> line_t;
 
 typedef bitset<ADDR_SIZE> addr_t;
 
@@ -103,3 +107,5 @@ struct DATA_LINE
     state_t state;
     line_t data;
 };
+
+#endif // __BLOCKS_HPP__
