@@ -2,7 +2,7 @@
 #define __BLOCKS_HPP__
 
 #include <cstdint> // For uint8_t, uint32_t etc.
-#include <cmath>
+// #include <cmath>
 #include <bitset>
 #include "consts.hpp"
 using namespace std;
@@ -48,6 +48,7 @@ struct DEV_REQ
 {
     addr_t addr;
     uint8_t dev_msg; // Request type: read, write or RMW;
+    word_offset_t mask;
 };
 struct DEV_RSP
 {
@@ -63,6 +64,7 @@ struct TU_REQ
     addr_t addr;
     uint8_t tu_msg; // Translate device message into LLC message.(Table II)
     bool gran;      // 0 for word granularity, 1 for line granularity;
+    word_offset_t mask;
 };
 struct TU_RSP
 {
@@ -81,6 +83,7 @@ struct LLC_REQ
     addr_t addr;
     uint8_t llc_msg; // Translate device message into LLC message.(Table II)
     bool gran;       // 0 for word granularity, 1 for line granularity;
+    word_offset_t mask;
 };
 struct LLC_RSP
 {

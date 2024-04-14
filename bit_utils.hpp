@@ -10,17 +10,6 @@
 #include "consts.hpp"
 #include "blocks.hpp"
 
-constexpr int lg2(int x)
-{
-    int result = 0; // 初始化结果为0
-    while (x > 1)
-    {
-        x >>= 1;  // 通过右移一位来除以2
-        result++; // 每移一次，实际上就是lg2(x)的值加1
-    }
-    return result;
-}
-
 constexpr std::size_t ULONGLONG_BITS = std::numeric_limits<unsigned long long>::digits;
 // Usage: new = BitCat[<a_len,b_len>](a,b);
 // Meaning: Concatenate 2 bitsets(smaller than ULONGLONG_BITS);
@@ -44,7 +33,6 @@ void LineCopy(line_t& dest, const line_t& src) {
     std::memcpy(dest, src, sizeof(line_t));
 }
 
-// not a good function.
 // void WordIns(word_t word, word_offset_t offset, line_t *line)
 // {
 //     byte_t *byte_off = (byte_t *)line;

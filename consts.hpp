@@ -2,7 +2,18 @@
 #define __CONSTS_HPP__
 
 // #include <cmath>
-#include "bit_utils.hpp"
+// #include "bit_utils.hpp"
+
+constexpr int lg2(int x)
+{
+    int result = 0; // 初始化结果为0
+    while (x > 1)
+    {
+        x >>= 1;  // 通过右移一位来除以2
+        result++; // 每移一次，实际上就是lg2(x)的值加1
+    }
+    return result;
+}
 
 #define ADDR_SIZE 32     // 32-bit address;
 #define BITS_PER_BYTE 8

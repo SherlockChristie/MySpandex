@@ -1,5 +1,5 @@
 #include "classes.hpp"
-#include <bitset>
+#include "bit_utils.hpp"
 
 void LLC::breakdown(LLC_ADDR &llc_addr, addr_t addr)
 {
@@ -18,14 +18,15 @@ void LLC::fetch_line(LLC_ADDR &llc_addr, LLC_DATA &llc_data)
     if ((tag_buf[llc_index] != llc_addr.tag) || (llc_data.state == LLC_I))
     {
         llc_data.hit = 0;
-        // LineCopy(llc_data.data_line,&temp);
-        // for (int i = 0; i < WORDS_PER_LINE; i++)
-        // {
-        //     for (int j = 0; j < BYTES_PER_WORD; j++)
-        //     {
-        //         llc_data.data_line[i][j] = 0;
-        //     }
-        // }
+        // line_t *p = (line_t *)llc_data.data_line;
+        // LineCopy(*p,temp);
+        for (int i = 0; i < WORDS_PER_LINE; i++)
+        {
+            for (int j = 0; j < BYTES_PER_WORD; j++)
+            {
+                llc_data.data_line[i][j] = 0;
+            }
+        }
     }
     else
     {
