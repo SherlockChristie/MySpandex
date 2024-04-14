@@ -11,33 +11,35 @@ void LLC::breakdown(LLC_ADDR &llc_addr, addr_t addr)
 
 void LLC::fetch_line(LLC_ADDR &llc_addr, LLC_DATA &llc_data)
 {
+    line_t zero = {0};
     unsigned long llc_index = (llc_addr.index).to_ulong();
-    line_t temp = {0};
     llc_data.state = state_buf[llc_index];
     llc_data.sharers = sharers_buf[llc_index];
     if ((tag_buf[llc_index] != llc_addr.tag) || (llc_data.state == LLC_I))
     {
         llc_data.hit = 0;
+        LineCopy(llc_data.data_line,zero);
         // line_t *p = (line_t *)llc_data.data_line;
         // LineCopy(*p,temp);
-        for (int i = 0; i < WORDS_PER_LINE; i++)
-        {
-            for (int j = 0; j < BYTES_PER_WORD; j++)
-            {
-                llc_data.data_line[i][j] = 0;
-            }
-        }
+        // for (int i = 0; i < WORDS_PER_LINE; i++)
+        // {
+        //     for (int j = 0; j < BYTES_PER_WORD; j++)
+        //     {
+        //         llc_data.data_line[i][j] = 0;
+        //     }
+        // }
     }
     else
     {
         llc_data.hit = 1;
-        for (int i = 0; i < WORDS_PER_LINE; i++)
-        {
-            for (int j = 0; j < BYTES_PER_WORD; j++)
-            {
-                llc_data.data_line[i][j] = cache[llc_index][i * BYTES_PER_WORD + j];
-            }
-        }
+        LineCopy(llc_data.data_line,cache[llc_index]);
+        // for (int i = 0; i < WORDS_PER_LINE; i++)
+        // {
+        //     for (int j = 0; j < BYTES_PER_WORD; j++)
+        //     {
+        //         llc_data.data_line[i][j] = cache[llc_index][i * BYTES_PER_WORD + j];
+        //     }
+        // }
     }
 };
 

@@ -85,9 +85,9 @@ void DEV::snd_rsp_learn(LLC_REQ &fwd_in)
             // HLS_DEFINE_PROTOCOL("send_invalidate_1");
             // wait();
             send_inval(fwd_in.addr, DATA);
-        }
+        }break;
     }
-    break;
+    
     case FWD_REQ_Odata:
     {
         // ADD_COVERAGE("do_fwd_fwd_stall_REQ_Odata");

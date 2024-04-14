@@ -14,14 +14,17 @@ public:
     DEV_REQ req;
     DEV_RSP rsp;
     DEV_ADDR dev_addr;
+    DEV_DATA dev_data;
     byte_t cache[DEV_ROW][DEV_COL];
     // 内存是按字节寻址的，故此处用byte_t; 但数据传输的最小单元是字，故下文用word_t;
     state_t state_buf[DEV_ROW];
     dev_tag_t tag_buf[DEV_ROW];
     sharers_t sharers_buf[DEV_ROW];
     void breakdown(DEV_ADDR &dev_addr, addr_t addr);
+    void fetch_line(DEV_ADDR &dev_addr, DEV_DATA &dev_data);
     void send_rsp(uint8_t msg, uint8_t req_id, bool to_req, addr_t line_addr, line_t &line);
     void snd_rsp(LLC_REQ &fwd_in);
+    void solve_pending_ReqWB();
 };
 
 // class DEV_ADDR
@@ -50,7 +53,7 @@ class LLC
 {
 public:
     LLC_REQ req;
-    LLC_REQ rsp;
+    LLC_RSP rsp;
     LLC_ADDR llc_addr;
     LLC_DATA llc_data;
     // word_t data_word;

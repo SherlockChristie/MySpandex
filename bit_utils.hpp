@@ -10,6 +10,8 @@
 #include "consts.hpp"
 #include "blocks.hpp"
 
+void wait(){};
+
 constexpr std::size_t ULONGLONG_BITS = std::numeric_limits<unsigned long long>::digits;
 // Usage: new = BitCat[<a_len,b_len>](a,b);
 // Meaning: Concatenate 2 bitsets(smaller than ULONGLONG_BITS);
