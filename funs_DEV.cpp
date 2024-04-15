@@ -2,6 +2,7 @@
 #include "bit_utils.hpp"
 using namespace std;
 
+void DEV::dev_caller_tu(){};
 void DEV::solve_pending_ReqWB(){};
 void DEV::breakdown(DEV_ADDR &dev_addr, addr_t addr)
 {
@@ -17,7 +18,7 @@ void DEV::fetch_line(DEV_ADDR &dev_addr, DEV_DATA &dev_data)
     unsigned long dev_index = (dev_addr.index).to_ulong();
     dev_data.state = state_buf[dev_index];
     dev_data.sharers = sharers_buf[dev_index];
-    if ((tag_buf[dev_index] != dev_addr.tag) || (dev_data.state == DEV_I))
+    if ((tag_buf[dev_index] != dev_addr.tag) || (dev_data.state == SPX_I))
     {
         dev_data.hit = 0;
         LineCopy(dev_data.data_line, zero);
@@ -54,18 +55,18 @@ void DEV::snd_rsp(LLC_REQ &fwd_in)
         // Forwards to owner; Others can read; Remain O state;
         {
             // Just right in the expected state;
-            if (dev_data.state == DEV_O)
+            if (dev_data.state == SPX_O)
             {
                 rsp.dev_msg = RSP_V;
                 LineCopy(rsp.data, dev_data.data_line);
             }
             // Pending Transition to Expected State;
-            else if (dev_data.state == DEV_XO)
+            else if (dev_data.state == SPX_XO)
             {
                 wait();
             }
             // Pending Transition from Expected State;
-            else if (dev_data.state == DEV_OI)
+            else if (dev_data.state == SPX_OI)
             {
                 solve_pending_ReqWB();
             }
@@ -74,90 +75,91 @@ void DEV::snd_rsp(LLC_REQ &fwd_in)
                 // no ,tu do this, go to tu;
                 // do nack;
                 // if > MAX_RETRY reqV = reqWT;
+                dev_caller_tu();
             }
             rsp.to_reqor = 1;
-            dev_data.state == DEV_O;
+            dev_data.state == SPX_O;
             break;
         }
     case FWD_REQ_O:
     {
         // Just right in the expected state;
-        if (dev_data.state == DEV_O || dev_data.state == DEV_XO)
+        if (dev_data.state == SPX_O || dev_data.state == SPX_XO)
         {
             rsp.dev_msg = RSP_O;
             // no need for pending states, since ReqO does not need a data transfer, just ownership;
         }
         // Pending Transition from Expected State;
-        else if (dev_data.state == DEV_OI)
+        else if (dev_data.state == SPX_OI)
         {
             solve_pending_ReqWB();
         }
         rsp.to_reqor = 1;
-        dev_data.state == DEV_I;
+        dev_data.state == SPX_I;
         break;
     }
     case FWD_REQ_Odata:
     {
-        if (dev_data.state == DEV_O)
+        if (dev_data.state == SPX_O)
         {
             rsp.dev_msg = RSP_Odata;
             LineCopy(rsp.data, dev_data.data_line);
         }
-        else if (dev_data.state == DEV_XO)
+        else if (dev_data.state == SPX_XO)
         // that's what FWD_REQ_Odata diff from FWD_REQ_O;
         {
             wait();
         }
-        else if (dev_data.state == DEV_OI)
+        else if (dev_data.state == SPX_OI)
         {
             solve_pending_ReqWB();
         }
         rsp.to_reqor = 1;
-        dev_data.state == DEV_I;
+        dev_data.state == SPX_I;
         break;
     }
     case FWD_RVK_O:
     {
-        if (dev_data.state == DEV_O)
+        if (dev_data.state == SPX_O)
         {
             rsp.dev_msg = RSP_RVK_O;
         }
-        else if (dev_data.state == DEV_XO)
+        else if (dev_data.state == SPX_XO)
         {
             wait();
         }
-        else if (dev_data.state == DEV_OI)
+        else if (dev_data.state == SPX_OI)
         {
             solve_pending_ReqWB();
         }
         rsp.to_reqor = 0;
-        dev_data.state == DEV_I;
+        dev_data.state == SPX_I;
         break;
     }
     case FWD_INV:
     {
-        if (dev_data.state == DEV_S || dev_data.state == DEV_IS || dev_data.state == DEV_XO)
+        if (dev_data.state == SPX_S || dev_data.state == SPX_IS || dev_data.state == SPX_XO)
         {
             rsp.dev_msg = RSP_INV_ACK;
         }
         rsp.to_reqor = 0;
-        dev_data.state == DEV_I;
+        dev_data.state == SPX_I;
         break;
     }
 
     case FWD_REQ_S:
     {
-        if (dev_data.state == DEV_O)
+        if (dev_data.state == SPX_O)
         {
             rsp.to_reqor = 1;
             rsp.dev_msg = RSP_S;
             // another response ???
         }
-        else if (dev_data.state == DEV_XO)
+        else if (dev_data.state == SPX_XO)
         {
             wait();
         }
-        else if (dev_data.state == DEV_OI)
+        else if (dev_data.state == SPX_OI)
         {
             solve_pending_ReqWB();
         }

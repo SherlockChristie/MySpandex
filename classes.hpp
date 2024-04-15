@@ -25,6 +25,7 @@ public:
     void send_rsp(uint8_t msg, uint8_t req_id, bool to_req, addr_t line_addr, line_t &line);
     void snd_rsp(LLC_REQ &fwd_in);
     void solve_pending_ReqWB();
+    void dev_caller_tu();
 };
 
 // class DEV_ADDR
@@ -43,10 +44,15 @@ public:
     uint8_t type;
     TU_REQ req;
     TU_RSP rsp;
-    word_t data_word;
-    line_t data_line;
+    TU_DATA tu_data;
+    // word_t data_word;
+    // line_t data_line;
     void req_mapping(DEV &dev);
-    void state_mapping();
+    void state_mapping(DEV &dev);
+    void tu_for_gpu();
+    void tu_for_acc();
+    void tu_for_cpu();
+    void tu_callee_dev();
 };
 
 class LLC

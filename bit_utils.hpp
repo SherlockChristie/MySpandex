@@ -5,7 +5,7 @@
 #include <bitset>
 #include <type_traits>
 #include <limits>
-#include <cstring> 
+#include <cstring>
 // using namespace std;
 #include "consts.hpp"
 #include "blocks.hpp"
@@ -25,14 +25,26 @@ BitCat(const std::bitset<N1> &a, const std::bitset<N2> &b)
 // Usage: the_sub_bitset = BitSub<len_big,len_sub>(the_big_bitset,offset);
 // Meaning: the_sub_bitset = the_big_bitset[from (offset) to (offset + len_sub)];
 // TODO: <N1,N2> not optional, not consistent with BitCat.
-template<std::size_t N1, std::size_t N2>
+template <std::size_t N1, std::size_t N2>
 std::bitset<N2> BitSub(std::bitset<N1> &b, std::size_t offset)
 {
     return std::bitset<N2>((b >> offset).to_ullong());
 }
 
-void LineCopy(line_t& dest, const line_t& src) {
+void LineCopy(line_t &dest, const line_t &src)
+{
     std::memcpy(dest, src, sizeof(line_t));
+}
+
+bool LineReady(state_t &state)
+{
+    std::bitset<STATE_LINE> state_line = BitSub<STATE_BITS, STATE_LINE>(state, STATE_WORDS);
+    std::bitset<STATE_WORDS> state_words = BitSub<STATE_BITS, STATE_WORDS>(state, 0);
+
+    if ((state_line == SPX_V) && (state_words.none()))
+        return 1;
+    else
+        return 0;
 }
 
 // void WordIns(word_t word, word_offset_t offset, line_t *line)

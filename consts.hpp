@@ -44,8 +44,8 @@ constexpr int lg2(int x)
 #define LLC_TAG_BITS ADDR_SIZE - LLC_INDEX_BITS - WORDS_OFF - BYTES_OFF // 18
 // 仅后4位有值，高位全为0; 但是保持地址位宽一致;
 
-#define STATE_LINE 2               // 2 bits for a line (Invalid, Valid or Shared);
-#define STATE_WORDS WORDS_PER_LINE // 1 bit for a word;
+#define STATE_LINE 2               // 2 bits for a whole line (Invalid, Valid or Shared);
+#define STATE_WORDS WORDS_PER_LINE // 1 bit for each word;
 #define STATE_BITS STATE_LINE+STATE_WORDS // no need to separate them;
 // Described in Section III-B:
 // To limit tag and state overhead, allocation occurs at line granularity.
@@ -62,9 +62,9 @@ constexpr int lg2(int x)
 
 /// Device type
 // same with TU's type
-#define CPU 0
-#define GPU 1
-#define ACC 2
+#define CPU 0 // MESI
+#define GPU 1 // GPU coh.
+#define ACC 2 // DeNovo
 
 /// Request (DEV to TU)
 #define READ 0   // read
@@ -72,21 +72,29 @@ constexpr int lg2(int x)
 #define RMW 2    // read, write and modify
 #define O_REPL 3 // owned replacement
 
-/// Device states
+// Device states
 #define DEV_I 0
 #define DEV_V 1
-#define DEV_S 2
-#define DEV_O 3
+#define DEV_O 2
+#define DEV_S 3
+#define DEV_M 4
+#define DEV_E 5
 
-/// Device Transient states
-#define DEV_IV 1
-#define DEV_II 2
-#define DEV_OI 3
-#define DEV_AMO 4
-#define DEV_IV_DCS 5
-#define DEV_XO 6
-#define DEV_XOV 7
-#define DEV_IS 8
+// Spandex states
+#define SPX_I 0
+#define SPX_V 1
+#define SPX_S 2
+#define SPX_O 3
+
+// Spandex Transient states
+#define SPX_IV 1
+#define SPX_II 2
+#define SPX_OI 3
+#define SPX_AMO 4
+#define SPX_IV_DCS 5
+#define SPX_XO 6
+#define SPX_XOV 7
+#define SPX_IS 8
 
 // /// TU type
 // #define TU_CPU 0

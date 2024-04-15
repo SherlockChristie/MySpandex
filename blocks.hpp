@@ -75,8 +75,18 @@ struct TU_REQ
     bool gran;      // 0 for word granularity, 1 for line granularity;
     word_offset_t mask;
 };
+
 struct TU_RSP
 {
+    uint8_t tu_msg;
+    line_t data;
+};
+
+struct TU_DATA
+{
+    line_t data_line;
+    state_t state;
+    sharers_t sharers;
 };
 
 struct LLC_ADDR
