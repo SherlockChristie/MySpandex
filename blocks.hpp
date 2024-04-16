@@ -106,7 +106,7 @@ struct LLC_REQ
 {
     uint8_t llc_msg; // Translate device message into LLC message.(Table II)
     bool gran;       // 0 for word granularity, 1 for line granularity;
-    id_t dest; // Destination of the REQuest;
+    id_t dest; // Destination of the request;
     word_offset_t mask;
     addr_t addr; // Used when it needs data instead of just ownership.
 };
