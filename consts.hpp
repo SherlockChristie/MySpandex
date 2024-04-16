@@ -5,17 +5,28 @@
 // #include "bit_utils.hpp"
 
 constexpr int lg2(int x)
+// 向上取整log2()结果;
 {
-    int result = 0; // 初始化结果为0
-    while (x > 1)
+    if (x == 1)
+        return 1;
+    else
     {
-        x >>= 1;  // 通过右移一位来除以2
-        result++; // 每移一次，实际上就是lg2(x)的值加1
+        int result = 0; // 初始化结果
+        x--;
+        // 对于恰好是2的幂的数， -1降低了一位，但是下面的条件是x > 0而非x > 1，相当于又+1;
+        // 对于不是2的幂的数， -1不影响位数;
+
+        // 循环移位，直到x变为0
+        while (x > 0)
+        {
+            x >>= 1;
+            result++;
+        }
+        return result;
     }
-    return result;
 }
 
-#define ADDR_SIZE 32     // 32-bit address;
+#define ADDR_SIZE 32 // 32-bit address;
 #define BITS_PER_BYTE 8
 #define BYTES_PER_WORD 4 // uint8_t for byte, uint32_t for word;
 #define WORDS_PER_LINE 4
@@ -27,7 +38,7 @@ constexpr int lg2(int x)
 // #define WORD_MASK ((1 << BYTES_PER_WORD) - 1)
 
 #define DEV_ROW 64                             // 2^6
-#define DEV_COL BYTES_PER_WORD*WORDS_PER_LINE // byte addressing;
+#define DEV_COL BYTES_PER_WORD *WORDS_PER_LINE // byte addressing;
 
 #define LLC_ROW 1024 // 2^10
 #define LLC_COL DEV_COL
@@ -44,15 +55,18 @@ constexpr int lg2(int x)
 #define LLC_TAG_BITS ADDR_SIZE - LLC_INDEX_BITS - WORDS_OFF - BYTES_OFF // 18
 // 仅后4位有值，高位全为0; 但是保持地址位宽一致;
 
-#define STATE_LINE 2               // 2 bits for a whole line (Invalid, Valid or Shared);
-#define STATE_WORDS WORDS_PER_LINE // 1 bit for each word;
-#define STATE_BITS STATE_LINE+STATE_WORDS // no need to separate them;
+#define STATE_NUM 2                        // 2 bits for a whole line (Invalid, Valid or Shared);
+#define STATE_WORDS WORDS_PER_LINE         // 1 bit for each word;
+#define STATE_BITS STATE_NUM + STATE_WORDS // no need to separate them;
 // Described in Section III-B:
 // To limit tag and state overhead, allocation occurs at line granularity.
 // For each line, two bits indicate whether the line is Invalid, Valid or Shared.
 // For each word within the cache line, a single bit tracks whether the word is Owned in a remote cache.
 // For each Owned word, the data field itself stores the ID of the remote owner.
-#define MAX_DEVS 4 // 4=3+1; Also considering LLC.
+#define STATE_UNSTABLE lg2(11) // 4
+#define STATE_DEV lg2(6) // 3
+
+#define MAX_DEVS 4                  // 4=3+1; Also considering LLC.
 #define MAX_DEVS_BITS lg2(MAX_DEVS) // 2 bits for both sharers and owners ID;
 // 为方便计假设只有三种设备且每种设备都只有一个 Cache，用下文定义的 Device type 区分;
 
@@ -69,7 +83,7 @@ constexpr int lg2(int x)
 #define GPU 2 // GPU coh.
 #define ACC 3 // DeNovo
 
-/// REQuest (DEV to TU)
+/// request (DEV to TU)
 #define READ 0   // read
 #define WRITE 1  // write
 #define RMW 2    // read, write and modify
@@ -83,21 +97,21 @@ constexpr int lg2(int x)
 #define DEV_M 4
 #define DEV_E 5
 
-// Spandex states
-#define SPX_I 0
-#define SPX_V 1
-#define SPX_S 2
-#define SPX_O 3
+// // Spandex states
+// #define SPX_I 0
+// #define SPX_V 1
+// #define SPX_S 2
+// #define SPX_O 3
 
-// Spandex Transient states
-#define SPX_IV 1
-#define SPX_II 2
-#define SPX_OI 3
-#define SPX_AMO 4
-#define SPX_IV_DCS 5
-#define SPX_XO 6
-#define SPX_XOV 7
-#define SPX_IS 8
+// // Spandex Transient states
+// #define SPX_IV 1
+// #define SPX_II 2
+// #define SPX_OI 3
+// #define SPX_AMO 4
+// #define SPX_IV_DCS 5
+// #define SPX_XO 6
+// #define SPX_XOV 7
+// #define SPX_IS 8
 
 // /// TU type
 // #define TU_CPU 0
@@ -128,7 +142,7 @@ constexpr int lg2(int x)
 /// REQuest (TU to LLC)
 #define REQ_NULL 0 // not used REQ.
 #define REQ_S 1
-#define REQ_Odata 2 
+#define REQ_Odata 2
 #define REQ_WT 3
 #define REQ_WB 4
 #define REQ_O 5

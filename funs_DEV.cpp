@@ -12,7 +12,7 @@ void DEV::breakdown(DEV_ADDR &dev_addr, addr_t addr)
     dev_addr.tag = BitSub<ADDR_SIZE, DEV_TAG_BITS>(addr, DEV_INDEX_BITS + WORDS_OFF + BYTES_OFF);
 }
 
-bool DEV::fetch_line(DEV_ADDR &dev_addr, DEV_DATA &dev_data)
+bool DEV::fetch_line(DEV_ADDR &dev_addr, DATA_LINE &dev_data)
 {
     line_t zero = {0};
     unsigned long dev_index = (dev_addr.index).to_ulong();
@@ -32,7 +32,7 @@ bool DEV::fetch_line(DEV_ADDR &dev_addr, DEV_DATA &dev_data)
 
 // void DEV::RSP_msg(TU &REQor)
 // {
-//     rsp.dev_msg = msg;
+//     rsp.msg = msg;
 //     rsp.REQ_id = REQ_id;
 //     rsp.to_REQ = to_REQ;
 //     rsp.addr = line_addr;
@@ -43,13 +43,13 @@ bool DEV::fetch_line(DEV_ADDR &dev_addr, DEV_DATA &dev_data)
 //     // l2_rsp.nb_put(RSP);
 // }
 
-void DEV::snd_RSP(LLC_REQ &fwd_in)
+void DEV::snd_RSP(REQ &fwd_in)
 {
     TU reqor;
     breakdown(dev_addr, fwd_in.addr);
     fetch_line(dev_addr, dev_data);
 
-    switch (fwd_in.llc_msg)
+    switch (fwd_in.msg)
     {
     case FWD_REQ_V:
         // Forwards to owner; Others can read; Remain O state;
@@ -57,7 +57,7 @@ void DEV::snd_RSP(LLC_REQ &fwd_in)
             // Just right in the expected state;
             if (dev_data.state == SPX_O)
             {
-                rsp.dev_msg = RSP_V;
+                rsp.msg = RSP_V;
                 LineCopy(rsp.data, dev_data.data_line);
             }
             // Pending Transition to Expected State;
@@ -86,7 +86,7 @@ void DEV::snd_RSP(LLC_REQ &fwd_in)
         // Just right in the expected state;
         if (dev_data.state == SPX_O || dev_data.state == SPX_XO)
         {
-            rsp.dev_msg = RSP_O;
+            rsp.msg = RSP_O;
             // no need for pending states, since REQO does not need a data transfer, just ownership;
         }
         // Pending Transition from Expected State;
@@ -102,7 +102,7 @@ void DEV::snd_RSP(LLC_REQ &fwd_in)
     {
         if (dev_data.state == SPX_O)
         {
-            rsp.dev_msg = RSP_Odata;
+            rsp.msg = RSP_Odata;
             LineCopy(rsp.data, dev_data.data_line);
         }
         else if (dev_data.state == SPX_XO)
@@ -122,7 +122,7 @@ void DEV::snd_RSP(LLC_REQ &fwd_in)
     {
         if (dev_data.state == SPX_O)
         {
-            rsp.dev_msg = RSP_RVK_O;
+            rsp.msg = RSP_RVK_O;
         }
         else if (dev_data.state == SPX_XO)
         {
@@ -140,7 +140,7 @@ void DEV::snd_RSP(LLC_REQ &fwd_in)
     {
         if (dev_data.state == SPX_S || dev_data.state == SPX_IS || dev_data.state == SPX_XO)
         {
-            rsp.dev_msg = RSP_INV_ACK;
+            rsp.msg = RSP_INV_ACK;
         }
         rsp.to_reqor = 0;
         dev_data.state == SPX_I;
@@ -152,7 +152,7 @@ void DEV::snd_RSP(LLC_REQ &fwd_in)
         if (dev_data.state == SPX_O)
         {
             rsp.to_reqor = 1;
-            rsp.dev_msg = RSP_S;
+            rsp.msg = RSP_S;
             // another response ???
         }
         else if (dev_data.state == SPX_XO)

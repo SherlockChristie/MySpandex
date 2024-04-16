@@ -61,7 +61,7 @@ void LLC::send_RSP_out(coh_msg_t coh_msg, line_addr_t addr, line_t line, cache_i
                               cache_id_t dest_id, invack_cnt_t invack_cnt, word_offset_t_t word_offset_t, word_mask_t word_mask)
 {
     SEND_RSP_OUT;
-    LLC_RSP_out_t<CACHE_ID_WIDTH> RSP_out;
+    RSP_out_t<CACHE_ID_WIDTH> RSP_out;
     RSP_out.coh_msg = coh_msg;
     RSP_out.addr = addr;
     RSP_out.line = line;
@@ -70,9 +70,9 @@ void LLC::send_RSP_out(coh_msg_t coh_msg, line_addr_t addr, line_t line, cache_i
     RSP_out.invack_cnt = invack_cnt;
     RSP_out.word_offset_t = word_offset_t;
     RSP_out.word_mask = word_mask;
-    while (!LLC_RSP_out.nb_can_put())
+    while (!RSP_out.nb_can_put())
         wait();
-    LLC_RSP_out.nb_put(RSP_out);
+    RSP_out.nb_put(RSP_out);
 }
 
 void LLC::send_fwd_out(mix_msg_t coh_msg, line_addr_t addr, cache_id_t REQ_id, cache_id_t dest_id, word_mask_t word_mask)
@@ -94,7 +94,7 @@ void LLC::send_dma_RSP_out(coh_msg_t coh_msg, line_addr_t addr, line_t line, llc
                                   cache_id_t dest_id, invack_cnt_t invack_cnt, word_offset_t_t word_offset_t)
 {
     SEND_DMA_RSP_OUT;
-    LLC_RSP_out_t<LLC_COH_DEV_ID_WIDTH> RSP_out;
+    RSP_out_t<LLC_COH_DEV_ID_WIDTH> RSP_out;
     RSP_out.coh_msg = coh_msg;
     RSP_out.addr = addr;
     RSP_out.line = line;
@@ -224,7 +224,7 @@ inline int LLC::send_inv_with_sharer_list(line_addr_t addr, sharers_t sharer_lis
 
 /// write REQs buf
 void LLC::fill_REQs(mix_msg_t msg, cache_id_t REQ_id, addr_breakdown_llc_t addr_br, llc_tag_t tag_estall, llc_way_t way_hit,
-                    llc_unstable_state_line_t state, hprot_t hprot, word_t word, line_t line, word_mask_t word_mask, bitset<LLC_REQS_BITS> REQs_i)
+                    llc_unstable_state_line_t state, hprot_t hprot, word_t word, line_t line, word_mask_t word_mask, bitset<REQS_BITS> REQs_i)
 {
     LLC_FILL_REQS;
 
@@ -248,15 +248,15 @@ void LLC::fill_REQs(mix_msg_t msg, cache_id_t REQ_id, addr_breakdown_llc_t addr_
 
 
 
-bool LLC::REQs_peek_REQ(addr_breakdown_llc_t br, bitset<LLC_REQS_BITS> &REQs_empty_i)
+bool LLC::REQs_peek_REQ(addr_breakdown_llc_t br, bitset<REQS_BITS> &REQs_empty_i)
 {
-    LLC_REQS_PEEK_REQ;
+    REQS_PEEK_REQ;
 
     set_conflict = 0;
 
     for (unsigned int i = 0; i < LLC_N_REQS; ++i)
     {
-        LLC_REQS_PEEK_REQ_LOOP;
+        REQS_PEEK_REQ_LOOP;
 
         if (REQs[i].state == LLC_I)
             REQs_empty_i = i;
@@ -310,8 +310,8 @@ void LLC::ctrl()
         bool is_dma_REQ_to_get = 0;
 
         bool rst_in = 0;
-        LLC_RSP_in_t RSP_in;
-        LLC_REQ_in_t<CACHE_ID_WIDTH> REQ_in;
+        RSP_in_t RSP_in;
+        REQ_in_t<CACHE_ID_WIDTH> REQ_in;
 
         bool can_get_rst_tb = 0;
         bool can_get_RSP_in = 0;
@@ -343,8 +343,8 @@ void LLC::ctrl()
             bool do_get_dma_REQ = 0;
 
             can_get_rst_tb = llc_rst_tb.nb_can_get();
-            can_get_RSP_in = LLC_RSP_in.nb_can_get();
-            can_get_REQ_in = LLC_REQ_in.nb_can_get();
+            can_get_RSP_in = RSP_in.nb_can_get();
+            can_get_REQ_in = REQ_in.nb_can_get();
             can_get_dma_in = llc_dma_REQ_in.nb_can_get();
 
             if (can_get_RSP_in)
@@ -389,11 +389,11 @@ void LLC::ctrl()
             {
                 if (evict_stall)
                 {
-                    REQ_in = LLC_REQ_stall;
+                    REQ_in = REQ_stall;
                 }
                 else if (set_conflict)
                 {
-                    REQ_in = LLC_REQ_conflict;
+                    REQ_in = REQ_conflict;
                 }
                 else
                 {
@@ -426,7 +426,7 @@ void LLC::ctrl()
 
             if (is_RSP_to_get)
             {
-                LLC_RSP_in.nb_get(RSP_in);
+                RSP_in.nb_get(RSP_in);
             }
 
             if (is_rst_to_get)
@@ -436,7 +436,7 @@ void LLC::ctrl()
 
             if (do_get_REQ)
             {
-                LLC_REQ_in.nb_get(REQ_in);
+                REQ_in.nb_get(REQ_in);
             }
 
             if (do_get_dma_REQ)
@@ -579,7 +579,7 @@ void LLC::ctrl()
 
             /// @TODO handle responses
             addr_breakdown_llc_t addr_br_real;
-            bitset<LLC_REQS_BITS> REQs_hit_i;
+            bitset<REQS_BITS> REQs_hit_i;
             addr_br_real.breakdown(RSP_in.addr << OFFSET_BITS);
             REQs_lookup(addr_br_real, REQs_hit_i);
             switch (RSP_in.coh_msg)
@@ -761,7 +761,7 @@ void LLC::ctrl()
         {
 
             addr_breakdown_llc_t addr_br_real;
-            bitset<LLC_REQS_BITS> REQs_hit_i, REQs_empty_i;
+            bitset<REQS_BITS> REQs_hit_i, REQs_empty_i;
             addr_breakdown_llc_t evict_addr_br;
             evict_addr_br.breakdown(addr_evict_real);
             addr_br_real.breakdown(REQ_in.addr << OFFSET_BITS);
@@ -807,9 +807,9 @@ void LLC::ctrl()
                 }
                 /// failed to resolve REQuest
                 if (set_conflict)
-                    LLC_REQ_conflict = REQ_in;
+                    REQ_conflict = REQ_in;
                 if (evict_stall)
-                    LLC_REQ_stall = REQ_in;
+                    REQ_stall = REQ_in;
             }
             else
             {
@@ -869,7 +869,7 @@ void LLC::ctrl()
                 /// set pending eviction and skip REQuest
                 if (evict_stall)
                 {
-                    LLC_REQ_stall = REQ_in;
+                    REQ_stall = REQ_in;
                 }
                 else if (is_amo(REQ_in.coh_msg))
                 {
@@ -930,7 +930,7 @@ void LLC::ctrl()
 
                     case REQ_V:
 
-                        /// LLC_REQV;
+                        /// REQV;
                         switch (state_buf[way])
                         {
                         case LLC_I:
@@ -980,7 +980,7 @@ void LLC::ctrl()
                         break;
 
                     case REQ_S:
-                        /// LLC_REQS;
+                        /// REQS;
 
                         switch (state_buf[way])
                         {
@@ -1046,7 +1046,7 @@ void LLC::ctrl()
 
                     case REQ_O:
 
-                        /// LLC_REQO;
+                        /// REQO;
 
                         switch (state_buf[way])
                         {
@@ -1164,7 +1164,7 @@ void LLC::ctrl()
 
                     case REQ_WT:
 
-                        /// LLC_REQWT;
+                        /// REQWT;
 
                         switch (state_buf[way])
                         {
@@ -1340,7 +1340,7 @@ void LLC::ctrl()
                             fcs_prio_buf[way] = 1;
                         }
 
-                        /// LLC_REQO;
+                        /// REQO;
 
                         switch (state_buf[way])
                         {
@@ -1514,7 +1514,7 @@ void LLC::ctrl()
 
             addr_breakdown_llc_t evict_addr_br;
             evict_addr_br.breakdown(addr_evict_real);
-            bitset<LLC_REQS_BITS> REQs_empty_i;
+            bitset<REQS_BITS> REQs_empty_i;
 
 
             if (REQs_cnt == 0 || REQs_peek_REQ(evict_addr_br, REQs_empty_i))

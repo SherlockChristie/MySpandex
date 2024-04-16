@@ -11,26 +11,28 @@ class DEV
 {
 public:
     id_t id;               // 设备类型;
-    DEV_REQ req_buf[MAX_MSG];
+    REQ req_buf[MAX_MSG];
     // Wrong comprehension, dismiss the message below.
-    // DEV_REQ req[MAX_DEVS];
+    // REQ req[MAX_DEVS];
     // // 同一时间内一个设备最多向MAX_DEVS-1(自己)个目标发送请求;
     // // 尽管如此，数组大小也仍应该是MAX_DEVS而非MAX_DEVS-1，因为req[id]中的id对应谁是固定的;
     // // 数组下标代表引起此req的src，req.dest代表此req的目标（总是假定不会同时发送）;
-    DEV_RSP rsp_buf[MAX_MSG];
+    RSP rsp_buf[MAX_MSG];
     DEV_ADDR dev_addr;
-    DEV_DATA dev_data;
+    DATA_LINE dev_data;
     byte_t cache[DEV_ROW][DEV_COL];
     // 内存是按字节寻址的，故此处用byte_t; 但数据传输的最小单元是字，故下文用word_t;
-    state_t state_buf[DEV_ROW];
+    // word_t data_word;
+    // line_t data_line;
+    dev_state_t state_buf[DEV_ROW];
     dev_tag_t tag_buf[DEV_ROW];
     sharers_t sharers_buf[DEV_ROW];
 
     void msg_init();
     void breakdown(DEV_ADDR &dev_addr, addr_t addr);
-    bool fetch_line(DEV_ADDR &dev_addr, DEV_DATA &dev_data);
+    bool fetch_line(DEV_ADDR &dev_addr, DATA_LINE &dev_data);
     void send_RSP(uint8_t msg, uint8_t REQ_id, bool to_REQ, addr_t line_addr, line_t &line);
-    void snd_RSP(LLC_REQ &fwd_in);
+    void snd_RSP(REQ &fwd_in);
     void solve_pending_REQWB();
     void dev_caller_tu();
 };
@@ -49,15 +51,13 @@ class TU
 {
 public:
     id_t id;
-    TU_REQ req_buf[MAX_MSG];
-    TU_RSP rsp_buf[MAX_MSG];
-    TU_DATA tu_data;
-    // word_t data_word;
-    // line_t data_line;
+    REQ req_buf[MAX_MSG];
+    RSP rsp_buf[MAX_MSG];
+    DATA_LINE tu_data;
 
     void msg_init();
-    void REQ_mapping(unsigned long id, DEV_REQ &DEV_REQ);
-    void state_mapping(unsigned long id, DEV_DATA &dev_data);
+    void req_mapping(unsigned long id, REQ &req);
+    void state_mapping(unsigned long id, DATA_LINE &dev_data);
     void mapping_wrapper(DEV &dev);
     void tu_for_gpu();
     void tu_for_acc();
@@ -68,24 +68,24 @@ public:
 class LLC
 {
 public:
-    LLC_REQ req_buf[MAX_MSG];
-    LLC_RSP rsp_buf[MAX_MSG];
+    REQ req_buf[MAX_MSG];
+    RSP rsp_buf[MAX_MSG];
     LLC_ADDR llc_addr;
-    LLC_DATA llc_data;
+    DATA_LINE llc_data;
     // word_t data_word;
     // line_t data_line;
     byte_t cache[LLC_ROW][LLC_COL];
-    state_t state_buf[LLC_ROW];
+    llc_state_t state_buf[LLC_ROW];
     llc_tag_t tag_buf[LLC_ROW];
     sharers_t sharers_buf[LLC_ROW];
 
     void msg_init();
     void breakdown(LLC_ADDR &llc_addr, addr_t addr);
-    bool fetch_line(LLC_ADDR &llc_addr, LLC_DATA &llc_data);
-    id_t find_owner(LLC_DATA &llc_data);
-    void rcv_REQ(id_t &tu_id, TU_REQ &TU_REQ);
-    void snd_REQ();
-    void snd_RSP();
+    bool fetch_line(LLC_ADDR &llc_addr, DATA_LINE &llc_data);
+    id_t find_owner(DATA_LINE &llc_data);
+    void rcv_req(id_t &tu_id, REQ &tu_req);
+    void snd_req();
+    void snd_rsp();
     // void dev_lookup_in_llc(addr_t dev_addr);
     // void ctrl(); // Processes.
     // void reset_io();// cache controller
@@ -103,10 +103,10 @@ public:
     // // returns number of incack to expect
     // void send_dma_RSP_out(coh_msg_t coh_msg, line_addr_t addr, line_t line, llc_coh_dev_id_t REQ_id, cache_id_t dest_id, invack_cnt_t invack_cnt, word_offset_t_t word_offset_t);
     // bool is_amo(coh_msg_t coh_msg);
-    // void fill_REQs(mix_msg_t msg, cache_id_t REQ_id, addr_breakdown_llc_t addr_br, llc_tag_t tag_estall, llc_way_t way_hit, llc_unstable_state_t state, hprot_t hprot, word_t word, line_t line, word_mask_t word_mask, sc_uint<LLC_REQS_BITS> REQs_i);
+    // void fill_REQs(mix_msg_t msg, cache_id_t REQ_id, addr_breakdown_llc_t addr_br, llc_tag_t tag_estall, llc_way_t way_hit, llc_unstable_state_t state, hprot_t hprot, word_t word, line_t line, word_mask_t word_mask, sc_uint<REQS_BITS> REQs_i);
     // // write REQs buf
 
-    // bool REQs_peek_REQ(addr_breakdown_llc_t br, sc_uint<LLC_REQS_BITS> &REQs_empty_i);
+    // bool REQs_peek_REQ(addr_breakdown_llc_t br, sc_uint<REQS_BITS> &REQs_empty_i);
 };
 
 // class LLC_ADDR
@@ -119,7 +119,7 @@ public:
 //     void breakdown(addr_t addr);
 // };
 
-// class LLC_DATA
+// class DATA_LINE
 // {
 // public:
 //     bool hit;
@@ -146,8 +146,63 @@ public:
 // public:
 //     bool op; /// r, w, r atom., w atom., flush
 //     // hsize_t	hsize;
-//     LLC_DATA_ADDR addr;
+//     DATA_LINE_ADDR addr;
 //     line_t data_line;
 // };
+
+class FIFO {
+private:
+    int arr[MAX_MSG];
+    int front;
+    int rear;
+    int count;
+
+public:
+    FIFO() : front(0), rear(0), count(0) {}
+
+    bool isEmpty() const {
+        return count == 0;
+    }
+
+    bool isFull() const {
+        return count == MAX_MSG;
+    }
+
+    void enqueue(int element) {
+        if (isFull()) {
+            throw std::overflow_error("Queue is full");
+        }
+
+        arr[rear] = element;
+        rear = (rear + 1) % MAX_MSG;
+        ++count;
+    }
+
+    int dequeue() {
+        if (isEmpty()) {
+            throw std::underflow_error("Queue is empty");
+        }
+
+        int element = arr[front];
+        front = (front + 1) % MAX_MSG;
+        --count;
+        return element;
+    }
+
+    int peek() const {
+        if (isEmpty()) {
+            throw std::underflow_error("Queue is empty");
+        }
+        return arr[front];
+    }
+
+    // void display() const {
+    //     std::cout << "Queue: ";
+    //     for (int i = 0; i < count; ++i) {
+    //         std::cout << arr[(front + i) % MAX_MSG] << " ";
+    //     }
+    //     std::cout << std::endl;
+    // }
+};
 
 #endif // __CLASSES_HPP__

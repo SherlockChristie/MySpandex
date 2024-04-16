@@ -25,7 +25,10 @@ typedef byte_t line_t[BYTES_PER_WORD * WORDS_PER_LINE];
 
 typedef bitset<ADDR_SIZE> addr_t;
 
-typedef bitset<STATE_BITS> state_t;
+typedef bitset<STATE_DEV> dev_state_t;
+typedef bitset<STATE_BITS> llc_state_t;
+typedef bitset<STATE_NUM> word_state_t;
+typedef bitset<STATE_UNSTABLE> unstable_state_t;
 typedef bitset<DEV_TAG_BITS> dev_tag_t;
 typedef bitset<LLC_TAG_BITS> llc_tag_t;
 typedef bitset<DEV_INDEX_BITS> dev_index_t;
@@ -36,7 +39,34 @@ typedef bitset<MAX_DEVS_BITS> id_t;
 
 typedef bitset<WORDS_OFF> word_offset_t;
 typedef bitset<BYTES_OFF> byte_offset_t;
-typedef bitset<10> REQ_type;
+// typedef bitset<10> req_type;
+
+// Does not need DEV_REQ, TU_REQ, LLC_REQ;
+struct REQ
+{
+    id_t dest;   // Destination of the request;
+    addr_t addr; // Used when it needs data instead of just ownership.
+    uint8_t msg;
+    // dev_msg: Read, write or RMW;
+    // tu_msg: Translate device message into LLC message.(Table II)
+    // llc_msg: Fordward message;
+    bool gran;          // 0 for word granularity, 1 for line granularity;
+    word_offset_t mask; // Used when it is a line granularity req.
+    unstable_state_t u_state;
+    // Store the transient states in the req that triggers it instead of the LLC self.
+};
+struct RSP
+{
+    // uint8_t req_id;
+    id_t dest;
+    addr_t addr;
+    // bool to_reqor;
+    uint8_t msg; // Reponse type;
+    bool gran;
+    word_offset_t mask;
+    DATA_LINE data_line;
+    DATA_WORD data_word;
+};
 
 struct DEV_ADDR
 {
@@ -44,54 +74,6 @@ struct DEV_ADDR
     dev_index_t index;
     word_offset_t w_off;
     byte_offset_t b_off;
-};
-
-struct DEV_DATA
-{
-    // bool hit;
-    // word_t data_line[WORDS_PER_LINE]; // word granularity;
-    line_t data_line;
-    state_t state;
-    sharers_t sharers;
-};
-
-struct DEV_REQ
-{
-    id_t dest; // Destination of the REQuest;
-    addr_t addr;
-    uint8_t dev_msg; // REQuest type: read, write or RMW;
-    bool gran;       // 0 for word granularity, 1 for line granularity;
-    word_offset_t mask;
-};
-struct DEV_RSP
-{
-    // uint8_t REQ_id;
-    // addr_t addr;
-    bool to_reqor;
-    uint8_t dev_msg; // Reponse type;
-    line_t data;
-};
-
-struct TU_REQ
-{
-    id_t dest;
-    addr_t addr;
-    uint8_t tu_msg; // Translate device message into LLC message.(Table II)
-    bool gran;      // 0 for word granularity, 1 for line granularity;
-    word_offset_t mask;
-};
-
-struct TU_RSP
-{
-    uint8_t tu_msg;
-    line_t data;
-};
-
-struct TU_DATA
-{
-    line_t data_line;
-    state_t state;
-    sharers_t sharers;
 };
 
 struct LLC_ADDR
@@ -102,41 +84,28 @@ struct LLC_ADDR
     byte_offset_t b_off;
 };
 
-struct LLC_REQ
-{
-    uint8_t llc_msg; // Translate device message into LLC message.(Table II)
-    bool gran;       // 0 for word granularity, 1 for line granularity;
-    id_t dest; // Destination of the request;
-    word_offset_t mask;
-    addr_t addr; // Used when it needs data instead of just ownership.
-};
-struct LLC_RSP
-{
-    uint8_t llc_msg;
-    line_t data;
-};
-
-struct LLC_DATA
+// Does not need DEV_DATA, TU_DATA, LLC_DATA; just DATA_LINE or DATA_WORD;
+// Data is always the same; it depends on how we explain the address type.
+struct DATA_LINE
 {
     // bool hit;
     // word_t data_line[WORDS_PER_LINE]; // word granularity;
-    line_t data_line;
-    state_t state;
+    line_t data;
+    llc_state_t state;
+    // GPU and MESI only use state[highest 2 bits];
+    // DeNovo. LLC and TU uses whole state_t;
     sharers_t sharers;
 };
 
 struct DATA_WORD
+// not used in MESI;
 {
     // addr_t addr;
-    state_t state;
     word_t data;
-};
-
-struct DATA_LINE
-{
-    // addr_t addr;
-    state_t state;
-    line_t data;
+    word_state_t state;
+    // sharers_t sharers;
+    // No, Spandex stores sharers for the whole line;
+    // Also do not need owners_t, since if in O, data field itself stores the owner id;
 };
 
 #endif // __BLOCKS_HPP__

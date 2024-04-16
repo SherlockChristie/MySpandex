@@ -1,9 +1,9 @@
-void DEV::snd_RSP_learn(LLC_REQ &fwd_in)
+void DEV::snd_RSP_learn(REQ &fwd_in)
 // Behaviour when DEV receives an external REQuest from TU (Table IV).
 {
     state_t state;
     bool success = 0;
-    switch (fwd_in.llc_msg)
+    switch (fwd_in.msg)
     {
     case FWD_REQ_V:
     {
