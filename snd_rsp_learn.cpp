@@ -1,5 +1,5 @@
-void DEV::snd_rsp_learn(LLC_REQ &fwd_in)
-// Behaviour when DEV receives an external request from TU (Table IV).
+void DEV::snd_RSP_learn(LLC_REQ &fwd_in)
+// Behaviour when DEV receives an external REQuest from TU (Table IV).
 {
     state_t state;
     bool success = 0;
@@ -16,10 +16,10 @@ void DEV::snd_rsp_learn(LLC_REQ &fwd_in)
             // HLS_UNROLL_LOOP(ON, "1");
             if (fwd_in.mask == i_to_bin)
             {
-                // Check if the word is in the ReqWB
-                // Since Fwd Req V can be sent by other caches (NOT llc)
+                // Check if the word is in the REQWB
+                // Since Fwd REQ V can be sent by other caches (NOT llc)
                 // We need to handle mispredicted owner
-                if ((req.mask == i_to_bin) && (state == DEV_OI))
+                if ((REQ.mask == i_to_bin) && (state == DEV_OI))
                 {
                     ack_mask == i_to_bin;
                 }
@@ -33,12 +33,12 @@ void DEV::snd_rsp_learn(LLC_REQ &fwd_in)
             // HLS_DEFINE_PROTOCOL();
             if (ack_mask)
             {
-                send_rsp(RSP_V, fwd_in.req_id, true, fwd_in.addr, req.line, ack_mask);
+                send_RSP(RSP_V, fwd_in.REQ_id, true, fwd_in.addr, REQ.line, ack_mask);
             }
             if (nack_mask)
             {
                 // wait();
-                send_rsp(RSP_NACK, fwd_in.req_id, true, fwd_in.addr, 0, nack_mask);
+                send_RSP(RSP_NACK, fwd_in.REQ_id, true, fwd_in.addr, 0, nack_mask);
             }
         }
         success = 1;
@@ -48,35 +48,35 @@ void DEV::snd_rsp_learn(LLC_REQ &fwd_in)
     {
         // ADD_COVERAGE("do_fwd_fwd_stall_REQ_O");
         // Not checking word mask here
-        // Fwd Req O only comes from llc, word mask should be correct
+        // Fwd REQ O only comes from llc, word mask should be correct
         // Pending Transition from Expected State;
         if (state == DEV_OI)
         {
-            // HLS_DEFINE_PROTOCOL("fwd req o stall rsp o");
+            // HLS_DEFINE_PROTOCOL("fwd REQ o stall RSP o");
             // ADD_COVERAGE("do_fwd_fwd_stall_REQ_O_RSP_O");
-            send_rsp(RSP_O, fwd_in.req_id, true, fwd_in.addr, 0, fwd_in.mask);
+            send_RSP(RSP_O, fwd_in.REQ_id, true, fwd_in.addr, 0, fwd_in.mask);
             success = true;
         }
         // Pending Transition to Expected State;;
         else if (state == DEV_XO || state == DEV_AMO)
         {
             // ADD_COVERAGE("do_fwd_fwd_stall_REQ_O_XR_or_AMO");
-            mask_t rsp_mask = 0;
+            mask_t RSP_mask = 0;
             if (tag_hit)
             {
                 for (int i = 0; i < WORDS_PER_LINE; i++)
                 {
                     // HLS_UNROLL_LOOP(ON, "1");
-                    if ((fwd_in.mask & (1 << i)) && state_buf[req.way][i] == DEV_O)
+                    if ((fwd_in.mask & (1 << i)) && state_buf[REQ.way][i] == DEV_O)
                     {
-                        rsp_mask |= 1 << i;
-                        state_buf[req.way][i] = DEV_I;
+                        RSP_mask |= 1 << i;
+                        state_buf[REQ.way][i] = DEV_I;
                     }
                 }
-                if (rsp_mask)
+                if (RSP_mask)
                 {
-                    // HLS_DEFINE_PROTOCOL("fwd_req_o on xr");
-                    send_rsp(RSP_O, fwd_in.req_id, true, fwd_in.addr, line_buf[req.way], rsp_mask);
+                    // HLS_DEFINE_PROTOCOL("FWD_REQ_o on xr");
+                    send_RSP(RSP_O, fwd_in.REQ_id, true, fwd_in.addr, line_buf[REQ.way], RSP_mask);
                     success = true;
                 }
             }
@@ -92,33 +92,33 @@ void DEV::snd_rsp_learn(LLC_REQ &fwd_in)
     {
         // ADD_COVERAGE("do_fwd_fwd_stall_REQ_Odata");
         // Not checking word mask here
-        // Fwd Req Odata only comes from llc, word mask should be correct
+        // Fwd REQ Odata only comes from llc, word mask should be correct
         // Pending Transition from Expected State;
         if (state == DEV_OI)
         {
-            // HLS_DEFINE_PROTOCOL("fwd req o stall rsp o");
-            send_rsp(RSP_Odata, fwd_in.req_id, true, fwd_in.addr, req.line, fwd_in.mask);
+            // HLS_DEFINE_PROTOCOL("fwd REQ o stall RSP o");
+            send_RSP(RSP_Odata, fwd_in.REQ_id, true, fwd_in.addr, REQ.line, fwd_in.mask);
             success = true;
         }
         // Pending Transition to Expected State;
         else if (state == DEV_XO || state == DEV_AMO)
         {
-            mask_t rsp_mask = 0;
+            mask_t RSP_mask = 0;
             if (tag_hit)
             {
                 for (int i = 0; i < WORDS_PER_LINE; i++)
                 {
                     // HLS_UNROLL_LOOP(ON, "1");
-                    if ((fwd_in.mask & (1 << i)) && state_buf[req.way][i] == DEV_O)
+                    if ((fwd_in.mask & (1 << i)) && state_buf[REQ.way][i] == DEV_O)
                     {
-                        rsp_mask |= 1 << i;
-                        state_buf[req.way][i] = DEV_I;
+                        RSP_mask |= 1 << i;
+                        state_buf[REQ.way][i] = DEV_I;
                     }
                 }
-                if (rsp_mask)
+                if (RSP_mask)
                 {
-                    // HLS_DEFINE_PROTOCOL("fwd_req_odata on xr");
-                    send_rsp(RSP_Odata, fwd_in.req_id, true, fwd_in.addr, line_buf[req.way], rsp_mask);
+                    // HLS_DEFINE_PROTOCOL("FWD_REQ_odata on xr");
+                    send_RSP(RSP_Odata, fwd_in.REQ_id, true, fwd_in.addr, line_buf[REQ.way], RSP_mask);
                     success = true;
                 }
             }
@@ -138,32 +138,32 @@ void DEV::snd_rsp_learn(LLC_REQ &fwd_in)
         {
             // handle DEV_OI - LLC_OV deadlock
             // HLS_DEFINE_PROTOCOL("deadlock-solver-1");
-            mask_t rsp_mask = req.mask & fwd_in.mask;
-            req.mask &= ~rsp_mask;
-            if (rsp_mask)
-                send_rsp(RSP_RVK_O, 0, false, addr_br.line_addr, req.line, rsp_mask);
-            if (!req.mask)
+            mask_t RSP_mask = REQ.mask & fwd_in.mask;
+            REQ.mask &= ~RSP_mask;
+            if (RSP_mask)
+                send_RSP(RSP_RVK_O, 0, false, addr_br.line_addr, REQ.line, RSP_mask);
+            if (!REQ.mask)
                 state = DEV_II;
             success = true;
         }
         else if (state == DEV_XR || state == DEV_AMO)
         {
-            mask_t rsp_mask = 0;
+            mask_t RSP_mask = 0;
             if (tag_hit)
             {
                 for (int i = 0; i < WORDS_PER_LINE; i++)
                 {
                     // HLS_UNROLL_LOOP(ON, "1");
-                    if ((fwd_in.mask & (1 << i)) && state_buf[req.way][i] == DEV_O)
+                    if ((fwd_in.mask & (1 << i)) && state_buf[REQ.way][i] == DEV_O)
                     {
-                        rsp_mask |= 1 << i;
-                        state_buf[req.way][i] = DEV_I;
+                        RSP_mask |= 1 << i;
+                        state_buf[REQ.way][i] = DEV_I;
                     }
                 }
-                if (rsp_mask)
+                if (RSP_mask)
                 {
-                    // HLS_DEFINE_PROTOCOL("fwd_rvk_o_send_rsp_rvk_o");
-                    send_rsp(RSP_RVK_O, fwd_in.req_id, false, fwd_in.addr, line_buf[req.way], rsp_mask);
+                    // HLS_DEFINE_PROTOCOL("fwd_rvk_o_send_RSP_rvk_o");
+                    send_RSP(RSP_RVK_O, fwd_in.REQ_id, false, fwd_in.addr, line_buf[REQ.way], RSP_mask);
                     success = true;
                 }
             }
@@ -184,8 +184,8 @@ void DEV::snd_rsp_learn(LLC_REQ &fwd_in)
             state = DEV_II;
         }
         {
-            // HLS_DEFINE_PROTOCOL("send rsp_inv_ack_spdx fwd_stall");
-            send_rsp(RSP_INV_ACK_SPDX, 0, 0, fwd_in.addr, 0, mask_ALL);
+            // HLS_DEFINE_PROTOCOL("send RSP_inv_ack_spdx fwd_stall");
+            send_RSP(RSP_INV_ACK_SPDX, 0, 0, fwd_in.addr, 0, mask_ALL);
             // wait();
             send_inval(fwd_in.addr, DATA);
         }
@@ -197,35 +197,35 @@ void DEV::snd_rsp_learn(LLC_REQ &fwd_in)
     {
         // ADD_COVERAGE("do_fwd_fwd_stall_REQ_S");
         // Not checking word mask here
-        // Fwd Req S only comes from llc, word mask should be correct
+        // Fwd REQ S only comes from llc, word mask should be correct
         if (state == DEV_OI)
         {
-            // HLS_DEFINE_PROTOCOL("fwd_req_s stall rsp_s & rsp_rvo_o");
-            send_rsp(RSP_S, fwd_in.req_id, true, fwd_in.addr, req.line, fwd_in.mask);
+            // HLS_DEFINE_PROTOCOL("FWD_REQ_s stall RSP_s & RSP_rvo_o");
+            send_RSP(RSP_S, fwd_in.REQ_id, true, fwd_in.addr, REQ.line, fwd_in.mask);
             // wait();
-            send_rsp(RSP_RVK_O, fwd_in.req_id, false, fwd_in.addr, req.line, fwd_in.mask);
+            send_RSP(RSP_RVK_O, fwd_in.REQ_id, false, fwd_in.addr, REQ.line, fwd_in.mask);
             success = true;
         }
         else if (state == DEV_XR || state == DEV_AMO)
         {
-            mask_t rsp_mask = 0;
+            mask_t RSP_mask = 0;
             if (tag_hit)
             {
                 for (int i = 0; i < WORDS_PER_LINE; i++)
                 {
                     // HLS_UNROLL_LOOP(ON, "1");
-                    if ((fwd_in.mask & (1 << i)) && state_buf[req.way][i] == DEV_O)
+                    if ((fwd_in.mask & (1 << i)) && state_buf[REQ.way][i] == DEV_O)
                     {
-                        rsp_mask |= 1 << i;
-                        state_buf[req.way][i] = DEV_I;
+                        RSP_mask |= 1 << i;
+                        state_buf[REQ.way][i] = DEV_I;
                     }
                 }
-                if (rsp_mask)
+                if (RSP_mask)
                 {
-                    // HLS_DEFINE_PROTOCOL("fwd_req_s stall for xr");
-                    send_rsp(RSP_S, fwd_in.req_id, true, fwd_in.addr, line_buf[req.way], rsp_mask);
+                    // HLS_DEFINE_PROTOCOL("FWD_REQ_s stall for xr");
+                    send_RSP(RSP_S, fwd_in.REQ_id, true, fwd_in.addr, line_buf[REQ.way], RSP_mask);
                     // wait();
-                    send_rsp(RSP_RVK_O, fwd_in.req_id, false, fwd_in.addr, line_buf[req.way], rsp_mask);
+                    send_RSP(RSP_RVK_O, fwd_in.REQ_id, false, fwd_in.addr, line_buf[REQ.way], RSP_mask);
                     success = true;
                 }
             }
@@ -248,7 +248,7 @@ void DEV::snd_rsp_learn(LLC_REQ &fwd_in)
             // HLS_UNROLL_LOOP(ON, "1");
             if (fwd_in.mask & (1 << i))
             {
-                if ((req.mask & (1 << i)) && state == DEV_OI)
+                if ((REQ.mask & (1 << i)) && state == DEV_OI)
                 {
                     nack_mask |= 1 << i;
                 }
@@ -259,7 +259,7 @@ void DEV::snd_rsp_learn(LLC_REQ &fwd_in)
             if (nack_mask)
             {
                 // wait();
-                send_rsp(RSP_NACK, fwd_in.req_id, true, fwd_in.addr, 0, nack_mask);
+                send_RSP(RSP_NACK, fwd_in.REQ_id, true, fwd_in.addr, 0, nack_mask);
             }
         }
 

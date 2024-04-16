@@ -57,32 +57,32 @@ void LLC::read_set(const llc_addr_t base, const llc_way_t way_offset)
 }
 
 
-void LLC::send_rsp_out(coh_msg_t coh_msg, line_addr_t addr, line_t line, cache_id_t req_id,
+void LLC::send_RSP_out(coh_msg_t coh_msg, line_addr_t addr, line_t line, cache_id_t REQ_id,
                               cache_id_t dest_id, invack_cnt_t invack_cnt, word_offset_t_t word_offset_t, word_mask_t word_mask)
 {
     SEND_RSP_OUT;
-    llc_rsp_out_t<CACHE_ID_WIDTH> rsp_out;
-    rsp_out.coh_msg = coh_msg;
-    rsp_out.addr = addr;
-    rsp_out.line = line;
-    rsp_out.req_id = req_id;
-    rsp_out.dest_id = dest_id;
-    rsp_out.invack_cnt = invack_cnt;
-    rsp_out.word_offset_t = word_offset_t;
-    rsp_out.word_mask = word_mask;
-    while (!llc_rsp_out.nb_can_put())
+    LLC_RSP_out_t<CACHE_ID_WIDTH> RSP_out;
+    RSP_out.coh_msg = coh_msg;
+    RSP_out.addr = addr;
+    RSP_out.line = line;
+    RSP_out.REQ_id = REQ_id;
+    RSP_out.dest_id = dest_id;
+    RSP_out.invack_cnt = invack_cnt;
+    RSP_out.word_offset_t = word_offset_t;
+    RSP_out.word_mask = word_mask;
+    while (!LLC_RSP_out.nb_can_put())
         wait();
-    llc_rsp_out.nb_put(rsp_out);
+    LLC_RSP_out.nb_put(RSP_out);
 }
 
-void LLC::send_fwd_out(mix_msg_t coh_msg, line_addr_t addr, cache_id_t req_id, cache_id_t dest_id, word_mask_t word_mask)
+void LLC::send_fwd_out(mix_msg_t coh_msg, line_addr_t addr, cache_id_t REQ_id, cache_id_t dest_id, word_mask_t word_mask)
 {
     SEND_FWD_OUT;
     llc_fwd_out_t fwd_out;
 
     fwd_out.coh_msg = coh_msg;
     fwd_out.addr = addr;
-    fwd_out.req_id = req_id;
+    fwd_out.REQ_id = REQ_id;
     fwd_out.dest_id = dest_id;
     fwd_out.word_mask = word_mask;
     while (!llc_fwd_out.nb_can_put())
@@ -90,31 +90,31 @@ void LLC::send_fwd_out(mix_msg_t coh_msg, line_addr_t addr, cache_id_t req_id, c
     llc_fwd_out.nb_put(fwd_out);
 }
 
-void LLC::send_dma_rsp_out(coh_msg_t coh_msg, line_addr_t addr, line_t line, llc_coh_dev_id_t req_id,
+void LLC::send_dma_RSP_out(coh_msg_t coh_msg, line_addr_t addr, line_t line, llc_coh_dev_id_t REQ_id,
                                   cache_id_t dest_id, invack_cnt_t invack_cnt, word_offset_t_t word_offset_t)
 {
     SEND_DMA_RSP_OUT;
-    llc_rsp_out_t<LLC_COH_DEV_ID_WIDTH> rsp_out;
-    rsp_out.coh_msg = coh_msg;
-    rsp_out.addr = addr;
-    rsp_out.line = line;
-    rsp_out.req_id = req_id;
-    rsp_out.dest_id = dest_id;
-    rsp_out.invack_cnt = invack_cnt;
-    rsp_out.word_offset_t = word_offset_t;
-    while (!llc_dma_rsp_out.nb_can_put())
+    LLC_RSP_out_t<LLC_COH_DEV_ID_WIDTH> RSP_out;
+    RSP_out.coh_msg = coh_msg;
+    RSP_out.addr = addr;
+    RSP_out.line = line;
+    RSP_out.REQ_id = REQ_id;
+    RSP_out.dest_id = dest_id;
+    RSP_out.invack_cnt = invack_cnt;
+    RSP_out.word_offset_t = word_offset_t;
+    while (!llc_dma_RSP_out.nb_can_put())
         wait();
-    llc_dma_rsp_out.nb_put(rsp_out);
+    llc_dma_RSP_out.nb_put(RSP_out);
 }
 
-void LLC::send_fwd_out_data(mix_msg_t coh_msg, line_addr_t addr, cache_id_t req_id, cache_id_t dest_id, word_mask_t word_mask, line_t data)
+void LLC::send_fwd_out_data(mix_msg_t coh_msg, line_addr_t addr, cache_id_t REQ_id, cache_id_t dest_id, word_mask_t word_mask, line_t data)
 {
     SEND_FWD_OUT;
     llc_fwd_out_t fwd_out;
 
     fwd_out.coh_msg = coh_msg;
     fwd_out.addr = addr;
-    fwd_out.req_id = req_id;
+    fwd_out.REQ_id = REQ_id;
     fwd_out.dest_id = dest_id;
     fwd_out.word_mask = word_mask;
     fwd_out.line = data;
@@ -123,7 +123,7 @@ void LLC::send_fwd_out_data(mix_msg_t coh_msg, line_addr_t addr, cache_id_t req_
     llc_fwd_out.nb_put(fwd_out);
 }
 
-inline bool LLC::send_fwd_with_owner_mask(mix_msg_t coh_msg, line_addr_t addr, cache_id_t req_id, word_mask_t word_mask, line_t data)
+inline bool LLC::send_fwd_with_owner_mask(mix_msg_t coh_msg, line_addr_t addr, cache_id_t REQ_id, word_mask_t word_mask, line_t data)
 {
     fwd_coal_send_count = 0;
     for (int i = 0; i < WORDS_PER_LINE; i++)
@@ -131,8 +131,8 @@ inline bool LLC::send_fwd_with_owner_mask(mix_msg_t coh_msg, line_addr_t addr, c
         if (word_mask & (1 << i))
         {
             int owner = data.range(CACHE_ID_WIDTH - 1 + i * BITS_PER_WORD, i * BITS_PER_WORD).to_int();
-            if (owner != req_id || coh_msg == FWD_RVK_O)
-            { /// skip if requestor already owns word, still send if revoke
+            if (owner != REQ_id || coh_msg == FWD_RVK_O)
+            { /// skip if REQuestor already owns word, still send if revoke
                 bool coal = 0;
                 for (int j = 0; j < fwd_coal_send_count; j++)
                 {
@@ -158,14 +158,14 @@ inline bool LLC::send_fwd_with_owner_mask(mix_msg_t coh_msg, line_addr_t addr, c
     for (int i = 0; i < fwd_coal_send_count; i++)
     {
         HLS_DEFINE_PROTOCOL();
-        send_fwd_out(coh_msg, addr, req_id, fwd_coal_temp_dest[i], fwd_coal_word_mask[i]);
+        send_fwd_out(coh_msg, addr, REQ_id, fwd_coal_temp_dest[i], fwd_coal_word_mask[i]);
         fwd_coal_word_mask[i] = 0;
         wait();
     }
     return fwd_coal_send_count > 0;
 }
 
-inline bool LLC::send_fwd_with_owner_mask_data(mix_msg_t coh_msg, line_addr_t addr, cache_id_t req_id, word_mask_t word_mask, line_t data, line_t data_out)
+inline bool LLC::send_fwd_with_owner_mask_data(mix_msg_t coh_msg, line_addr_t addr, cache_id_t REQ_id, word_mask_t word_mask, line_t data, line_t data_out)
 {
     fwd_coal_send_count = 0;
     for (int i = 0; i < WORDS_PER_LINE; i++)
@@ -173,8 +173,8 @@ inline bool LLC::send_fwd_with_owner_mask_data(mix_msg_t coh_msg, line_addr_t ad
         if (word_mask & (1 << i))
         {
             int owner = data.range(CACHE_ID_WIDTH - 1 + i * BITS_PER_WORD, i * BITS_PER_WORD).to_int();
-            if (owner != req_id || coh_msg == FWD_RVK_O)
-            { /// skip if requestor already owns word, still send if revoke
+            if (owner != REQ_id || coh_msg == FWD_RVK_O)
+            { /// skip if REQuestor already owns word, still send if revoke
                 bool coal = 0;
                 for (int j = 0; j < fwd_coal_send_count; j++)
                 {
@@ -199,7 +199,7 @@ inline bool LLC::send_fwd_with_owner_mask_data(mix_msg_t coh_msg, line_addr_t ad
     }
     for (int i = 0; i < fwd_coal_send_count; i++)
     {
-        send_fwd_out_data(coh_msg, addr, req_id, fwd_coal_temp_dest[i], fwd_coal_word_mask[i], data_out);
+        send_fwd_out_data(coh_msg, addr, REQ_id, fwd_coal_temp_dest[i], fwd_coal_word_mask[i], data_out);
         fwd_coal_word_mask[i] = 0;
         wait();
     }
@@ -222,33 +222,33 @@ inline int LLC::send_inv_with_sharer_list(line_addr_t addr, sharers_t sharer_lis
     return cnt;
 }
 
-/// write reqs buf
-void LLC::fill_reqs(mix_msg_t msg, cache_id_t req_id, addr_breakdown_llc_t addr_br, llc_tag_t tag_estall, llc_way_t way_hit,
-                    llc_unstable_state_line_t state, hprot_t hprot, word_t word, line_t line, word_mask_t word_mask, bitset<LLC_REQS_BITS> reqs_i)
+/// write REQs buf
+void LLC::fill_REQs(mix_msg_t msg, cache_id_t REQ_id, addr_breakdown_llc_t addr_br, llc_tag_t tag_estall, llc_way_t way_hit,
+                    llc_unstable_state_line_t state, hprot_t hprot, word_t word, line_t line, word_mask_t word_mask, bitset<LLC_REQS_BITS> REQs_i)
 {
     LLC_FILL_REQS;
 
-    reqs[reqs_i].msg = msg;
-    reqs[reqs_i].tag = addr_br.tag;
-    reqs[reqs_i].tag_estall = tag_estall;
-    reqs[reqs_i].set = addr_br.set;
-    reqs[reqs_i].way = way_hit;
-    reqs[reqs_i].w_off = addr_br.w_off;
-    reqs[reqs_i].b_off = addr_br.b_off;
-    reqs[reqs_i].state = state;
-    reqs[reqs_i].hprot = hprot;
-    reqs[reqs_i].invack_cnt = MAX_N_L2;
-    reqs[reqs_i].word = word;
-    reqs[reqs_i].line = line;
-    reqs[reqs_i].word_mask = word_mask;
-    reqs[reqs_i].req_id = req_id;
-    reqs[reqs_i].is_amo = 0;
-    reqs_cnt--;
+    REQs[REQs_i].msg = msg;
+    REQs[REQs_i].tag = addr_br.tag;
+    REQs[REQs_i].tag_estall = tag_estall;
+    REQs[REQs_i].set = addr_br.set;
+    REQs[REQs_i].way = way_hit;
+    REQs[REQs_i].w_off = addr_br.w_off;
+    REQs[REQs_i].b_off = addr_br.b_off;
+    REQs[REQs_i].state = state;
+    REQs[REQs_i].hprot = hprot;
+    REQs[REQs_i].invack_cnt = MAX_N_L2;
+    REQs[REQs_i].word = word;
+    REQs[REQs_i].line = line;
+    REQs[REQs_i].word_mask = word_mask;
+    REQs[REQs_i].REQ_id = REQ_id;
+    REQs[REQs_i].is_amo = 0;
+    REQs_cnt--;
 }
 
 
 
-bool LLC::reqs_peek_req(addr_breakdown_llc_t br, bitset<LLC_REQS_BITS> &reqs_empty_i)
+bool LLC::REQs_peek_REQ(addr_breakdown_llc_t br, bitset<LLC_REQS_BITS> &REQs_empty_i)
 {
     LLC_REQS_PEEK_REQ;
 
@@ -258,16 +258,16 @@ bool LLC::reqs_peek_req(addr_breakdown_llc_t br, bitset<LLC_REQS_BITS> &reqs_emp
     {
         LLC_REQS_PEEK_REQ_LOOP;
 
-        if (reqs[i].state == LLC_I)
-            reqs_empty_i = i;
+        if (REQs[i].state == LLC_I)
+            REQs_empty_i = i;
 
-        if (reqs[i].tag == br.tag && reqs[i].set == br.set && reqs[i].state != LLC_I)
+        if (REQs[i].tag == br.tag && REQs[i].set == br.set && REQs[i].state != LLC_I)
             set_conflict = true;
     }
 
 #ifdef LLC_DEBUG
     /// @TODO
-    /// peek_reqs_i_dbg.write(reqs_i);
+    /// peek_REQs_i_dbg.write(REQs_i);
 #endif
 
     return set_conflict;
@@ -303,19 +303,19 @@ void LLC::ctrl()
         bool is_rst_to_resume = 0;
         bool is_flush_to_resume = 0;
         bool is_rst_to_get = 0;
-        bool is_rsp_to_get = 0;
-        bool is_req_to_get = 0;
+        bool is_RSP_to_get = 0;
+        bool is_REQ_to_get = 0;
         bool is_dma_read_to_resume = 0;
         bool is_dma_write_to_resume = 0;
-        bool is_dma_req_to_get = 0;
+        bool is_dma_REQ_to_get = 0;
 
         bool rst_in = 0;
-        llc_rsp_in_t rsp_in;
-        llc_req_in_t<CACHE_ID_WIDTH> req_in;
+        LLC_RSP_in_t RSP_in;
+        LLC_REQ_in_t<CACHE_ID_WIDTH> REQ_in;
 
         bool can_get_rst_tb = 0;
-        bool can_get_rsp_in = 0;
-        bool can_get_req_in = 0;
+        bool can_get_RSP_in = 0;
+        bool can_get_REQ_in = 0;
         bool can_get_dma_in = 0;
 
         bool update_evict_ways = 0;
@@ -339,27 +339,27 @@ void LLC::ctrl()
 
         {
             HLS_DEFINE_PROTOCOL("proto-llc-io-check");
-            bool do_get_req = 0;
-            bool do_get_dma_req = 0;
+            bool do_get_REQ = 0;
+            bool do_get_dma_REQ = 0;
 
             can_get_rst_tb = llc_rst_tb.nb_can_get();
-            can_get_rsp_in = llc_rsp_in.nb_can_get();
-            can_get_req_in = llc_req_in.nb_can_get();
-            can_get_dma_in = llc_dma_req_in.nb_can_get();
+            can_get_RSP_in = LLC_RSP_in.nb_can_get();
+            can_get_REQ_in = LLC_REQ_in.nb_can_get();
+            can_get_dma_in = llc_dma_REQ_in.nb_can_get();
 
-            if (can_get_rsp_in)
+            if (can_get_RSP_in)
             {
                 /// Response
-                is_rsp_to_get = true;
+                is_RSP_to_get = true;
             }
             else if (recall_pending)
             {
                 if (!recall_valid)
                 {
                     /// Response (could be related to the recall or not)
-                    if (can_get_rsp_in)
+                    if (can_get_RSP_in)
                     {
-                        is_rsp_to_get = true;
+                        is_RSP_to_get = true;
                     }
                 }
                 else
@@ -385,21 +385,21 @@ void LLC::ctrl()
                 /// Reset or flush
                 is_rst_to_get = true;
             }
-            else if (can_get_req_in || evict_stall || set_conflict)
+            else if (can_get_REQ_in || evict_stall || set_conflict)
             {
                 if (evict_stall)
                 {
-                    req_in = llc_req_stall;
+                    REQ_in = LLC_REQ_stall;
                 }
                 else if (set_conflict)
                 {
-                    req_in = llc_req_conflict;
+                    REQ_in = LLC_REQ_conflict;
                 }
                 else
                 {
-                    do_get_req = true;
+                    do_get_REQ = true;
                 }
-                is_req_to_get = true;
+                is_REQ_to_get = true;
             }
             else if (dma_read_pending)
             {
@@ -414,19 +414,19 @@ void LLC::ctrl()
                 if (can_get_dma_in)
                 {
                     is_dma_write_to_resume = true;
-                    do_get_dma_req = true;
+                    do_get_dma_REQ = true;
                 }
             }
             else if (can_get_dma_in)
             {
-                /// New DMA request
-                is_dma_req_to_get = true;
-                do_get_dma_req = true;
+                /// New DMA REQuest
+                is_dma_REQ_to_get = true;
+                do_get_dma_REQ = true;
             }
 
-            if (is_rsp_to_get)
+            if (is_RSP_to_get)
             {
-                llc_rsp_in.nb_get(rsp_in);
+                LLC_RSP_in.nb_get(RSP_in);
             }
 
             if (is_rst_to_get)
@@ -434,14 +434,14 @@ void LLC::ctrl()
                 llc_rst_tb.nb_get(rst_in);
             }
 
-            if (do_get_req)
+            if (do_get_REQ)
             {
-                llc_req_in.nb_get(req_in);
+                LLC_REQ_in.nb_get(REQ_in);
             }
 
-            if (do_get_dma_req)
+            if (do_get_dma_REQ)
             {
-                llc_dma_req_in.nb_get(dma_req_in);
+                llc_dma_REQ_in.nb_get(dma_REQ_in);
             }
         }
 
@@ -449,7 +449,7 @@ void LLC::ctrl()
         /// -----------------------------
         /// Lookup cache
         /// -----------------------------
-        look = is_flush_to_resume || is_rsp_to_get || is_req_to_get || is_dma_req_to_get || (is_dma_read_to_resume && !recall_pending) || (is_dma_write_to_resume && !recall_pending);
+        look = is_flush_to_resume || is_RSP_to_get || is_REQ_to_get || is_dma_REQ_to_get || (is_dma_read_to_resume && !recall_pending) || (is_dma_write_to_resume && !recall_pending);
 
         /// Pick right set
 
@@ -474,20 +474,20 @@ void LLC::ctrl()
                 flush_stall = 0;
             }
         }
-        else if (is_rsp_to_get)
+        else if (is_RSP_to_get)
         {
-            line_br.llc_line_breakdown(rsp_in.addr);
+            line_br.llc_line_breakdown(RSP_in.addr);
             set = line_br.set;
         }
-        else if (is_req_to_get)
+        else if (is_REQ_to_get)
         {
-            line_br.llc_line_breakdown(req_in.addr);
+            line_br.llc_line_breakdown(REQ_in.addr);
             set = line_br.set;
         }
-        else if (is_dma_req_to_get || is_dma_read_to_resume || is_dma_write_to_resume)
+        else if (is_dma_REQ_to_get || is_dma_read_to_resume || is_dma_write_to_resume)
         {
-            if (is_dma_req_to_get)
-                dma_addr = dma_req_in.addr;
+            if (is_dma_REQ_to_get)
+                dma_addr = dma_REQ_in.addr;
 
             line_br.llc_line_breakdown(dma_addr);
             set = line_br.set;
@@ -525,7 +525,7 @@ void LLC::ctrl()
         addr_evict_real = addr_evict << OFFSET_BITS;
 
         /// -----------------------------
-        /// Process current request
+        /// Process current REQuest
         /// -----------------------------
         /// handle reset flush
         if (is_flush_to_resume)
@@ -540,7 +540,7 @@ void LLC::ctrl()
                     HLS_DEFINE_PROTOCOL("is_flush_to_resume");
                     if (dirty_bits_buf[way])
                     {
-                        send_mem_req(WRITE, line_addr, hprots_buf[way], lines_buf[way]);
+                        send_mem_REQ(WRITE, line_addr, hprots_buf[way], lines_buf[way]);
                     }
 
                     wait();
@@ -574,64 +574,64 @@ void LLC::ctrl()
                 rst_flush_stalled_set = 0;
             }
         }
-        else if (is_rsp_to_get)
+        else if (is_RSP_to_get)
         {
 
             /// @TODO handle responses
             addr_breakdown_llc_t addr_br_real;
-            bitset<LLC_REQS_BITS> reqs_hit_i;
-            addr_br_real.breakdown(rsp_in.addr << OFFSET_BITS);
-            reqs_lookup(addr_br_real, reqs_hit_i);
-            switch (rsp_in.coh_msg)
+            bitset<LLC_REQS_BITS> REQs_hit_i;
+            addr_br_real.breakdown(RSP_in.addr << OFFSET_BITS);
+            REQs_lookup(addr_br_real, REQs_hit_i);
+            switch (RSP_in.coh_msg)
             {
             case RSP_INV_ACK_SPDX:
             {
-                reqs[reqs_hit_i].invack_cnt--;
-                sharers_buf[reqs[reqs_hit_i].way] &= ~(1 << rsp_in.req_id); /// clears sharer bit
+                REQs[REQs_hit_i].invack_cnt--;
+                sharers_buf[REQs[REQs_hit_i].way] &= ~(1 << RSP_in.REQ_id); /// clears sharer bit
 
-                if (reqs[reqs_hit_i].invack_cnt == 0)
+                if (REQs[REQs_hit_i].invack_cnt == 0)
                 {
-                    switch (reqs[reqs_hit_i].state)
+                    switch (REQs[REQs_hit_i].state)
                     {
                     case LLC_SO:
                     {
-                        if (reqs[reqs_hit_i].msg == REQ_O)
+                        if (REQs[REQs_hit_i].msg == REQ_O)
                         {
-                            HLS_DEFINE_PROTOCOL("send-rsp-800");
-                            send_rsp_out(RSP_O, rsp_in.addr, 0, reqs[reqs_hit_i].req_id, reqs[reqs_hit_i].req_id, 0, 0, reqs[reqs_hit_i].word_mask);
+                            HLS_DEFINE_PROTOCOL("send-RSP-800");
+                            send_RSP_out(RSP_O, RSP_in.addr, 0, REQs[REQs_hit_i].REQ_id, REQs[REQs_hit_i].REQ_id, 0, 0, REQs[REQs_hit_i].word_mask);
                         }
                         else
                         {
-                            HLS_DEFINE_PROTOCOL("send-rsp-804");
-                            send_rsp_out(RSP_Odata, rsp_in.addr, reqs[reqs_hit_i].line, reqs[reqs_hit_i].req_id, reqs[reqs_hit_i].req_id, 0, 0, reqs[reqs_hit_i].word_mask);
+                            HLS_DEFINE_PROTOCOL("send-RSP-804");
+                            send_RSP_out(RSP_Odata, RSP_in.addr, REQs[REQs_hit_i].line, REQs[REQs_hit_i].REQ_id, REQs[REQs_hit_i].REQ_id, 0, 0, REQs[REQs_hit_i].word_mask);
                         }
-                        state_buf[reqs[reqs_hit_i].way] = LLC_V;
-                        reqs[reqs_hit_i].state = LLC_I;
-                        reqs_cnt++;
+                        state_buf[REQs[REQs_hit_i].way] = LLC_V;
+                        REQs[REQs_hit_i].state = LLC_I;
+                        REQs_cnt++;
                     }
                     break;
                     case LLC_SV:
                     {
-                        if (reqs[reqs_hit_i].msg == REQ_WT || reqs[reqs_hit_i].msg == REQ_WTfwd)
+                        if (REQs[REQs_hit_i].msg == REQ_WT || REQs[REQs_hit_i].msg == REQ_WTfwd)
                         {
-                            HLS_DEFINE_PROTOCOL("send-rsp-813");
-                            send_rsp_out(RSP_O, rsp_in.addr, 0, reqs[reqs_hit_i].req_id, reqs[reqs_hit_i].req_id, 0, 0, reqs[reqs_hit_i].word_mask);
+                            HLS_DEFINE_PROTOCOL("send-RSP-813");
+                            send_RSP_out(RSP_O, RSP_in.addr, 0, REQs[REQs_hit_i].REQ_id, REQs[REQs_hit_i].REQ_id, 0, 0, REQs[REQs_hit_i].word_mask);
                         }
-                        else if (reqs[reqs_hit_i].is_amo)
+                        else if (REQs[REQs_hit_i].is_amo)
                         {
-                            HLS_DEFINE_PROTOCOL("send-rsp-817");
-                            calc_amo(lines_buf[reqs[reqs_hit_i].way], reqs[reqs_hit_i].line, req_in.coh_msg, req_in.word_mask);
-                            send_rsp_out(RSP_WTdata, rsp_in.addr, reqs[reqs_hit_i].line, reqs[reqs_hit_i].req_id, reqs[reqs_hit_i].req_id, 0, 0, reqs[reqs_hit_i].word_mask);
+                            HLS_DEFINE_PROTOCOL("send-RSP-817");
+                            calc_amo(lines_buf[REQs[REQs_hit_i].way], REQs[REQs_hit_i].line, REQ_in.coh_msg, REQ_in.word_mask);
+                            send_RSP_out(RSP_WTdata, RSP_in.addr, REQs[REQs_hit_i].line, REQs[REQs_hit_i].REQ_id, REQs[REQs_hit_i].REQ_id, 0, 0, REQs[REQs_hit_i].word_mask);
                         }
                         else
                         {
                             /// nothing
                         }
-                        lines_buf[reqs[reqs_hit_i].way] = reqs[reqs_hit_i].line;
-                        state_buf[reqs[reqs_hit_i].way] = LLC_V;
-                        reqs[reqs_hit_i].state = LLC_I;
-                        reqs_cnt++;
-                        if (recall_pending && rsp_in.addr == recall_addr)
+                        lines_buf[REQs[REQs_hit_i].way] = REQs[REQs_hit_i].line;
+                        state_buf[REQs[REQs_hit_i].way] = LLC_V;
+                        REQs[REQs_hit_i].state = LLC_I;
+                        REQs_cnt++;
+                        if (recall_pending && RSP_in.addr == recall_addr)
                             recall_valid = true;
 #ifdef LLC_DEBUG
                         dbg_recall_valid.write(recall_valid);
@@ -641,18 +641,18 @@ void LLC::ctrl()
                     case LLC_SWB:
                     {
                         HLS_DEFINE_PROTOCOL("send-mem-821");
-                        send_mem_req(WRITE, rsp_in.addr, reqs[reqs_hit_i].hprot, reqs[reqs_hit_i].line);
-                        state_buf[reqs[reqs_hit_i].way] = LLC_I;
-                        reqs[reqs_hit_i].state = LLC_I;
-                        reqs_cnt++;
+                        send_mem_REQ(WRITE, RSP_in.addr, REQs[REQs_hit_i].hprot, REQs[REQs_hit_i].line);
+                        state_buf[REQs[REQs_hit_i].way] = LLC_I;
+                        REQs[REQs_hit_i].state = LLC_I;
+                        REQs_cnt++;
                         evict_inprogress = 0;
                     }
                     break;
                     case LLC_SI:
                     {
-                        state_buf[reqs[reqs_hit_i].way] = LLC_I;
-                        reqs[reqs_hit_i].state = LLC_I;
-                        reqs_cnt++;
+                        state_buf[REQs[REQs_hit_i].way] = LLC_I;
+                        REQs[REQs_hit_i].state = LLC_I;
+                        REQs_cnt++;
                         evict_inprogress = 0;
                     }
                     break;
@@ -671,55 +671,55 @@ void LLC::ctrl()
                 for (int i = 0; i < WORDS_PER_LINE; i++)
                 {
                     HLS_UNROLL_LOOP(ON, "rvk-wb");
-                    if (owners_buf[reqs[reqs_hit_i].way] & (1 << i) & rsp_in.word_mask)
+                    if (owners_buf[REQs[REQs_hit_i].way] & (1 << i) & RSP_in.word_mask)
                     {
                         /// /// found a matching bit in mask
-                        /// if (rsp_in.req_id.to_int() == lines_buf[reqs[reqs_hit_i].way].range(CACHE_ID_WIDTH - 1 + i * BITS_PER_WORD, i * BITS_PER_WORD).to_int()) /// if owner id == req id
+                        /// if (RSP_in.REQ_id.to_int() == lines_buf[REQs[REQs_hit_i].way].range(CACHE_ID_WIDTH - 1 + i * BITS_PER_WORD, i * BITS_PER_WORD).to_int()) /// if owner id == REQ id
                         /// {
-                        lines_buf[reqs[reqs_hit_i].way].range((i + 1) * BITS_PER_WORD - 1, i * BITS_PER_WORD) = rsp_in.line.range((i + 1) * BITS_PER_WORD - 1, i * BITS_PER_WORD); /// write back new data
-                        owners_buf[reqs[reqs_hit_i].way] = owners_buf[reqs[reqs_hit_i].way] & (~(1 << i));                                                                         /// clear owner bit
-                        dirty_bits_buf[reqs[reqs_hit_i].way] = 1;
-                        sharers_buf[reqs[reqs_hit_i].way] |= 1 << rsp_in.req_id;
+                        lines_buf[REQs[REQs_hit_i].way].range((i + 1) * BITS_PER_WORD - 1, i * BITS_PER_WORD) = RSP_in.line.range((i + 1) * BITS_PER_WORD - 1, i * BITS_PER_WORD); /// write back new data
+                        owners_buf[REQs[REQs_hit_i].way] = owners_buf[REQs[REQs_hit_i].way] & (~(1 << i));                                                                         /// clear owner bit
+                        dirty_bits_buf[REQs[REQs_hit_i].way] = 1;
+                        sharers_buf[REQs[REQs_hit_i].way] |= 1 << RSP_in.REQ_id;
                         /// }
                     }
                 }
-                switch (reqs[reqs_hit_i].state)
+                switch (REQs[REQs_hit_i].state)
                 {
                 case LLC_OS:
                 {
-                    if (owners_buf[reqs[reqs_hit_i].way] == 0)
+                    if (owners_buf[REQs[REQs_hit_i].way] == 0)
                     {
                         /// change state
-                        state_buf[reqs[reqs_hit_i].way] = LLC_S;
-                        reqs[reqs_hit_i].state = LLC_I;
-                        reqs_cnt++;
-                        sharers_buf[reqs[reqs_hit_i].way] |= 1 << reqs[reqs_hit_i].req_id;
+                        state_buf[REQs[REQs_hit_i].way] = LLC_S;
+                        REQs[REQs_hit_i].state = LLC_I;
+                        REQs_cnt++;
+                        sharers_buf[REQs[REQs_hit_i].way] |= 1 << REQs[REQs_hit_i].REQ_id;
                     }
                 }
                 break;
                 case LLC_OV:
                 {
-                    if (owners_buf[reqs[reqs_hit_i].way] == 0)
+                    if (owners_buf[REQs[REQs_hit_i].way] == 0)
                     {
-                        if (reqs[reqs_hit_i].msg == REQ_WT)
+                        if (REQs[REQs_hit_i].msg == REQ_WT)
                         {
-                            HLS_DEFINE_PROTOCOL("send-rsp-813");
-                            send_rsp_out(RSP_O, rsp_in.addr, 0, reqs[reqs_hit_i].req_id, reqs[reqs_hit_i].req_id, 0, 0, reqs[reqs_hit_i].word_mask);
+                            HLS_DEFINE_PROTOCOL("send-RSP-813");
+                            send_RSP_out(RSP_O, RSP_in.addr, 0, REQs[REQs_hit_i].REQ_id, REQs[REQs_hit_i].REQ_id, 0, 0, REQs[REQs_hit_i].word_mask);
                         }
-                        else if (reqs[reqs_hit_i].is_amo)
+                        else if (REQs[REQs_hit_i].is_amo)
                         {
-                            HLS_DEFINE_PROTOCOL("send-rsp-817");
-                            calc_amo(lines_buf[reqs[reqs_hit_i].way], reqs[reqs_hit_i].line, req_in.coh_msg, req_in.word_mask);
-                            send_rsp_out(RSP_WTdata, rsp_in.addr, reqs[reqs_hit_i].line, reqs[reqs_hit_i].req_id, reqs[reqs_hit_i].req_id, 0, 0, reqs[reqs_hit_i].word_mask);
+                            HLS_DEFINE_PROTOCOL("send-RSP-817");
+                            calc_amo(lines_buf[REQs[REQs_hit_i].way], REQs[REQs_hit_i].line, REQ_in.coh_msg, REQ_in.word_mask);
+                            send_RSP_out(RSP_WTdata, RSP_in.addr, REQs[REQs_hit_i].line, REQs[REQs_hit_i].REQ_id, REQs[REQs_hit_i].REQ_id, 0, 0, REQs[REQs_hit_i].word_mask);
                         }
                         else
                         {
                             /// nothing
                         }
-                        state_buf[reqs[reqs_hit_i].way] = LLC_V;
-                        reqs[reqs_hit_i].state = LLC_I;
-                        reqs_cnt++;
-                        if (recall_pending && rsp_in.addr == recall_addr)
+                        state_buf[REQs[REQs_hit_i].way] = LLC_V;
+                        REQs[REQs_hit_i].state = LLC_I;
+                        REQs_cnt++;
+                        if (recall_pending && RSP_in.addr == recall_addr)
                             recall_valid = true;
 #ifdef LLC_DEBUG
                         dbg_recall_valid.write(recall_valid);
@@ -729,16 +729,16 @@ void LLC::ctrl()
                 break;
                 case LLC_OWB:
                 {
-                    if (owners_buf[reqs[reqs_hit_i].way] == 0)
+                    if (owners_buf[REQs[REQs_hit_i].way] == 0)
                     {
                         /// wb and goto I
                         {
                             HLS_DEFINE_PROTOCOL("send-mem-875");
-                            send_mem_req(WRITE, rsp_in.addr, reqs[reqs_hit_i].hprot, lines_buf[reqs[reqs_hit_i].way]);
+                            send_mem_REQ(WRITE, RSP_in.addr, REQs[REQs_hit_i].hprot, lines_buf[REQs[REQs_hit_i].way]);
                         }
-                        state_buf[reqs[reqs_hit_i].way] = LLC_I;
-                        reqs[reqs_hit_i].state = LLC_I;
-                        reqs_cnt++;
+                        state_buf[REQs[REQs_hit_i].way] = LLC_I;
+                        REQs[REQs_hit_i].state = LLC_I;
+                        REQs_cnt++;
                         evict_inprogress = 0;
                     }
                 }
@@ -756,43 +756,43 @@ void LLC::ctrl()
             }
         }
 
-        /// Process new request
-        else if (is_req_to_get)
+        /// Process new REQuest
+        else if (is_REQ_to_get)
         {
 
             addr_breakdown_llc_t addr_br_real;
-            bitset<LLC_REQS_BITS> reqs_hit_i, reqs_empty_i;
+            bitset<LLC_REQS_BITS> REQs_hit_i, REQs_empty_i;
             addr_breakdown_llc_t evict_addr_br;
             evict_addr_br.breakdown(addr_evict_real);
-            addr_br_real.breakdown(req_in.addr << OFFSET_BITS);
-            set_conflict = reqs_peek_req(evict_addr_br, reqs_hit_i) || reqs_peek_req(addr_br_real, reqs_empty_i) || (reqs_cnt == 0);
-            reqs_lookup(addr_br_real, reqs_hit_i);
+            addr_br_real.breakdown(REQ_in.addr << OFFSET_BITS);
+            set_conflict = REQs_peek_REQ(evict_addr_br, REQs_hit_i) || REQs_peek_REQ(addr_br_real, REQs_empty_i) || (REQs_cnt == 0);
+            REQs_lookup(addr_br_real, REQs_hit_i);
             evict_stall = evict_inprogress;
 
             if (evict_stall || set_conflict) /// optimize
             {
-                /// attempt to resolve requests that hit in transient state
-                switch (req_in.coh_msg)
+                /// attempt to resolve REQuests that hit in transient state
+                switch (REQ_in.coh_msg)
                 {
                 case REQ_S:
                 {
-                    /// if (sharers_buf[reqs[reqs_hit_i].way] & (1 << req_in.req_id)) { /// only allow relaxed rsp_s if private cache has a pending inv
-                    ///         switch (reqs[reqs_hit_i].state) {
-                    ///                 case LLC_SI: /// to solve reqs vs inv deadlock on LLC_SX due to silent ecivtion
+                    /// if (sharers_buf[REQs[REQs_hit_i].way] & (1 << REQ_in.REQ_id)) { /// only allow relaxed RSP_s if private cache has a pending inv
+                    ///         switch (REQs[REQs_hit_i].state) {
+                    ///                 case LLC_SI: /// to solve REQs vs inv deadlock on LLC_SX due to silent ecivtion
                     ///                 {
                     ///                         HLS_DEFINE_PROTOCOL("deadlock-solver-1");
-                    ///                         send_rsp_out(RSP_S, req_in.addr, lines_buf[way], req_in.req_id, req_in.req_id, 0, 0, req_in.word_mask);
-                    ///                         send_fwd_out(FWD_INV_SPDX, req_in.addr, 0, req_in.req_id, WORD_MASK_ALL);
-                    ///                         reqs[reqs_hit_i].invack_cnt++;
+                    ///                         send_RSP_out(RSP_S, REQ_in.addr, lines_buf[way], REQ_in.REQ_id, REQ_in.REQ_id, 0, 0, REQ_in.word_mask);
+                    ///                         send_fwd_out(FWD_INV_SPDX, REQ_in.addr, 0, REQ_in.REQ_id, WORD_MASK_ALL);
+                    ///                         REQs[REQs_hit_i].invack_cnt++;
                     ///                         evict_stall = 0;
                     ///                 }
                     ///                 break;
-                    ///                 case LLC_SO: /// to solve reqs vs inv deadlock on LLC_SX due to silent ecivtion
+                    ///                 case LLC_SO: /// to solve REQs vs inv deadlock on LLC_SX due to silent ecivtion
                     ///                 {
                     ///                         HLS_DEFINE_PROTOCOL("deadlock-solver-2");
-                    ///                         send_rsp_out(RSP_S, req_in.addr, lines_buf[way], req_in.req_id, req_in.req_id, 0, 0, req_in.word_mask);
-                    ///                         send_fwd_out(FWD_INV_SPDX, req_in.addr, 0, req_in.req_id, WORD_MASK_ALL);
-                    ///                         reqs[reqs_hit_i].invack_cnt++;
+                    ///                         send_RSP_out(RSP_S, REQ_in.addr, lines_buf[way], REQ_in.REQ_id, REQ_in.REQ_id, 0, 0, REQ_in.word_mask);
+                    ///                         send_fwd_out(FWD_INV_SPDX, REQ_in.addr, 0, REQ_in.REQ_id, WORD_MASK_ALL);
+                    ///                         REQs[REQs_hit_i].invack_cnt++;
                     ///                         set_conflict = 0;
                     ///                 }
                     ///                 break;
@@ -805,11 +805,11 @@ void LLC::ctrl()
                 default:
                     break;
                 }
-                /// failed to resolve request
+                /// failed to resolve REQuest
                 if (set_conflict)
-                    llc_req_conflict = req_in;
+                    LLC_REQ_conflict = REQ_in;
                 if (evict_stall)
-                    llc_req_stall = req_in;
+                    LLC_REQ_stall = REQ_in;
             }
             else
             {
@@ -829,22 +829,22 @@ void LLC::ctrl()
                     switch (state_buf[way])
                     {
                     /// here we made sure that this set is all in stable state
-                    /// because any request conflict in unstable buffer has been blocked by set_conflict
+                    /// because any REQuest conflict in unstable buffer has been blocked by set_conflict
                     case LLC_V:
                     {
                         if (owners_buf[way] == 0)
                         {
                             if (dirty_bits_buf[way])
                             {
-                                HLS_DEFINE_PROTOCOL("send_mem_req-2");
-                                send_mem_req(WRITE, addr_evict, hprots_buf[way], lines_buf[way]);
+                                HLS_DEFINE_PROTOCOL("send_mem_REQ-2");
+                                send_mem_REQ(WRITE, addr_evict, hprots_buf[way], lines_buf[way]);
                             }
                             state_buf[way] = LLC_I;
                         }
                         else
                         {
-                            (void)send_fwd_with_owner_mask(FWD_RVK_O, addr_evict, req_in.req_id, owners_buf[way], lines_buf[way]);
-                            fill_reqs(FWD_RVK_O, req_in.req_id, evict_addr_br, 0, way, LLC_OWB, hprots_buf[way], 0, lines_buf[way], owners_buf[way], reqs_empty_i); /// save this request in reqs buffer
+                            (void)send_fwd_with_owner_mask(FWD_RVK_O, addr_evict, REQ_in.REQ_id, owners_buf[way], lines_buf[way]);
+                            fill_REQs(FWD_RVK_O, REQ_in.REQ_id, evict_addr_br, 0, way, LLC_OWB, hprots_buf[way], 0, lines_buf[way], owners_buf[way], REQs_empty_i); /// save this REQuest in REQs buffer
                             evict_stall = true;
                             evict_inprogress = true;
                         }
@@ -854,10 +854,10 @@ void LLC::ctrl()
                     {
                         int cnt = send_inv_with_sharer_list(addr_evict, sharers_buf[way]);
                         if (dirty_bits_buf[way])
-                            fill_reqs(FWD_INV_SPDX, req_in.req_id, evict_addr_br, 0, way, LLC_SWB, hprots_buf[way], 0, lines_buf[way], owners_buf[way], reqs_empty_i); /// save this request in reqs buffer
+                            fill_REQs(FWD_INV_SPDX, REQ_in.REQ_id, evict_addr_br, 0, way, LLC_SWB, hprots_buf[way], 0, lines_buf[way], owners_buf[way], REQs_empty_i); /// save this REQuest in REQs buffer
                         else
-                            fill_reqs(FWD_INV_SPDX, req_in.req_id, evict_addr_br, 0, way, LLC_SI, hprots_buf[way], 0, lines_buf[way], owners_buf[way], reqs_empty_i); /// save this request in reqs buffer
-                        reqs[reqs_empty_i].invack_cnt = cnt;
+                            fill_REQs(FWD_INV_SPDX, REQ_in.REQ_id, evict_addr_br, 0, way, LLC_SI, hprots_buf[way], 0, lines_buf[way], owners_buf[way], REQs_empty_i); /// save this REQuest in REQs buffer
+                        REQs[REQs_empty_i].invack_cnt = cnt;
                         evict_stall = true;
                         evict_inprogress = true;
                     }
@@ -866,12 +866,12 @@ void LLC::ctrl()
                         break;
                     }
                 }
-                /// set pending eviction and skip request
+                /// set pending eviction and skip REQuest
                 if (evict_stall)
                 {
-                    llc_req_stall = req_in;
+                    LLC_REQ_stall = REQ_in;
                 }
-                else if (is_amo(req_in.coh_msg))
+                else if (is_amo(REQ_in.coh_msg))
                 {
                     /// if in owned state
                     dirty_bits_buf[way] = 1;
@@ -880,12 +880,12 @@ void LLC::ctrl()
                     case LLC_I:
                     {
                         /// if in invalid, read out data and perform amo
-                        HLS_DEFINE_PROTOCOL("send_mem_req-948");
-                        send_mem_req(READ, req_in.addr, req_in.hprot, 0);
-                        get_mem_rsp(lines_buf[way]);
-                        calc_amo(lines_buf[way], req_in.line, req_in.coh_msg, req_in.word_mask);
-                        send_rsp_out(RSP_WTdata, req_in.addr, req_in.line, req_in.req_id, req_in.req_id, 0, 0, req_in.word_mask); /// send old data out
-                        hprots_buf[way] = req_in.hprot;
+                        HLS_DEFINE_PROTOCOL("send_mem_REQ-948");
+                        send_mem_REQ(READ, REQ_in.addr, REQ_in.hprot, 0);
+                        get_mem_RSP(lines_buf[way]);
+                        calc_amo(lines_buf[way], REQ_in.line, REQ_in.coh_msg, REQ_in.word_mask);
+                        send_RSP_out(RSP_WTdata, REQ_in.addr, REQ_in.line, REQ_in.REQ_id, REQ_in.REQ_id, 0, 0, REQ_in.word_mask); /// send old data out
+                        hprots_buf[way] = REQ_in.hprot;
                         tag_buf[way] = line_br.tag;
                         dirty_bits_buf[way] = 0;
                         state_buf[way] = LLC_V;
@@ -894,27 +894,27 @@ void LLC::ctrl()
                     case LLC_V:
                     {
                         /// if amo is on not owned word, we are lucky
-                        if ((owners_buf[way] & req_in.word_mask) == 0)
+                        if ((owners_buf[way] & REQ_in.word_mask) == 0)
                         {
-                            calc_amo(lines_buf[way], req_in.line, req_in.coh_msg, req_in.word_mask);
-                            send_rsp_out(RSP_WTdata, req_in.addr, req_in.line, req_in.req_id, req_in.req_id, 0, 0, req_in.word_mask); /// send old data out
+                            calc_amo(lines_buf[way], REQ_in.line, REQ_in.coh_msg, REQ_in.word_mask);
+                            send_RSP_out(RSP_WTdata, REQ_in.addr, REQ_in.line, REQ_in.REQ_id, REQ_in.REQ_id, 0, 0, REQ_in.word_mask); /// send old data out
                         }
                         else
                         {
                             /// send rvko
                             /// @TODO this might need thinking
-                            send_fwd_with_owner_mask(FWD_RVK_O, req_in.addr, req_in.req_id, req_in.word_mask, 0);
-                            fill_reqs(req_in.coh_msg, req_in.req_id, addr_br_real, 0, way, LLC_OV, hprots_buf[way], 0, req_in.line, owners_buf[way], reqs_empty_i); /// save this request in reqs buffer
-                            reqs[reqs_empty_i].is_amo = true;
+                            send_fwd_with_owner_mask(FWD_RVK_O, REQ_in.addr, REQ_in.REQ_id, REQ_in.word_mask, 0);
+                            fill_REQs(REQ_in.coh_msg, REQ_in.REQ_id, addr_br_real, 0, way, LLC_OV, hprots_buf[way], 0, REQ_in.line, owners_buf[way], REQs_empty_i); /// save this REQuest in REQs buffer
+                            REQs[REQs_empty_i].is_amo = true;
                         }
                     }
                     break;
                     case LLC_S:
                     {
-                        int cnt = send_inv_with_sharer_list(req_in.addr, sharers_buf[way]);
-                        fill_reqs(req_in.coh_msg, req_in.req_id, addr_br_real, 0, way, LLC_SV, req_in.hprot, 0, req_in.line, req_in.word_mask, reqs_empty_i); /// save this request in reqs buffer
-                        reqs[reqs_empty_i].invack_cnt = cnt;
-                        reqs[reqs_empty_i].is_amo = true;
+                        int cnt = send_inv_with_sharer_list(REQ_in.addr, sharers_buf[way]);
+                        fill_REQs(REQ_in.coh_msg, REQ_in.REQ_id, addr_br_real, 0, way, LLC_SV, REQ_in.hprot, 0, REQ_in.line, REQ_in.word_mask, REQs_empty_i); /// save this REQuest in REQs buffer
+                        REQs[REQs_empty_i].invack_cnt = cnt;
+                        REQs[REQs_empty_i].is_amo = true;
                     }
                     break;
 
@@ -925,7 +925,7 @@ void LLC::ctrl()
                 else
                 {
 
-                    switch (req_in.coh_msg)
+                    switch (REQ_in.coh_msg)
                     {
 
                     case REQ_V:
@@ -935,11 +935,11 @@ void LLC::ctrl()
                         {
                         case LLC_I:
                         {
-                            HLS_DEFINE_PROTOCOL("send_mem_req-948");
-                            send_mem_req(READ, req_in.addr, req_in.hprot, 0);
-                            get_mem_rsp(lines_buf[way]);
-                            send_rsp_out(RSP_V, req_in.addr, lines_buf[way], req_in.req_id, req_in.req_id, 0, 0, req_in.word_mask);
-                            hprots_buf[way] = req_in.hprot;
+                            HLS_DEFINE_PROTOCOL("send_mem_REQ-948");
+                            send_mem_REQ(READ, REQ_in.addr, REQ_in.hprot, 0);
+                            get_mem_RSP(lines_buf[way]);
+                            send_RSP_out(RSP_V, REQ_in.addr, lines_buf[way], REQ_in.REQ_id, REQ_in.REQ_id, 0, 0, REQ_in.word_mask);
+                            hprots_buf[way] = REQ_in.hprot;
                             tag_buf[way] = line_br.tag;
                             dirty_bits_buf[way] = 0;
                             state_buf[way] = LLC_V;
@@ -950,27 +950,27 @@ void LLC::ctrl()
                         {
                             /// REQV_IV;
 
-                            word_owner_mask = owners_buf[way] & req_in.word_mask;
-                            word_no_owner_mask = req_in.word_mask & ~owners_buf[way];
+                            word_owner_mask = owners_buf[way] & REQ_in.word_mask;
+                            word_no_owner_mask = REQ_in.word_mask & ~owners_buf[way];
                             if (word_owner_mask)
                             {
                                 /// if owner exist
-                                send_fwd_with_owner_mask(FWD_REQ_V, req_in.addr, req_in.req_id, word_owner_mask, lines_buf[way]);
+                                send_fwd_with_owner_mask(FWD_REQ_V, REQ_in.addr, REQ_in.REQ_id, word_owner_mask, lines_buf[way]);
                             }
 
                             if (word_no_owner_mask)
                             {
                                 /// if left over words exist
-                                HLS_DEFINE_PROTOCOL("send_rsp_974");
-                                send_rsp_out(RSP_V, req_in.addr, lines_buf[way], req_in.req_id, req_in.req_id, 0, 0, word_no_owner_mask);
+                                HLS_DEFINE_PROTOCOL("send_RSP_974");
+                                send_RSP_out(RSP_V, REQ_in.addr, lines_buf[way], REQ_in.REQ_id, REQ_in.REQ_id, 0, 0, word_no_owner_mask);
                             }
                         }
                         break;
                         case LLC_S:
                         {
                             /// REQV_S;
-                            HLS_DEFINE_PROTOCOL("send_rsp_982");
-                            send_rsp_out(RSP_V, req_in.addr, lines_buf[way], req_in.req_id, req_in.req_id, 0, 0, req_in.word_mask);
+                            HLS_DEFINE_PROTOCOL("send_RSP_982");
+                            send_RSP_out(RSP_V, REQ_in.addr, lines_buf[way], REQ_in.REQ_id, REQ_in.REQ_id, 0, 0, REQ_in.word_mask);
                         }
                         break;
                         default:
@@ -988,42 +988,42 @@ void LLC::ctrl()
                         case LLC_I:
                         {
                             /// REQS_IV;
-                            HLS_DEFINE_PROTOCOL("send_mem_req_1000");
-                            send_mem_req(READ, req_in.addr, req_in.hprot, 0);
-                            get_mem_rsp(lines_buf[way]);
-                            send_rsp_out(RSP_S, req_in.addr, lines_buf[way], req_in.req_id, req_in.req_id, 0, 0, req_in.word_mask);
-                            hprots_buf[way] = req_in.hprot;
+                            HLS_DEFINE_PROTOCOL("send_mem_REQ_1000");
+                            send_mem_REQ(READ, REQ_in.addr, REQ_in.hprot, 0);
+                            get_mem_RSP(lines_buf[way]);
+                            send_RSP_out(RSP_S, REQ_in.addr, lines_buf[way], REQ_in.REQ_id, REQ_in.REQ_id, 0, 0, REQ_in.word_mask);
+                            hprots_buf[way] = REQ_in.hprot;
                             tag_buf[way] = line_br.tag;
                             dirty_bits_buf[way] = 0;
                             state_buf[way] = LLC_S;
-                            sharers_buf[way] = 1 << req_in.req_id;
+                            sharers_buf[way] = 1 << REQ_in.REQ_id;
                         }
                         break;
                         case LLC_V:
                         {
                             /// REQS_IV;
 
-                            word_owner_mask = owners_buf[way] & req_in.word_mask;
-                            word_no_owner_mask = req_in.word_mask & ~owners_buf[way];
+                            word_owner_mask = owners_buf[way] & REQ_in.word_mask;
+                            word_no_owner_mask = REQ_in.word_mask & ~owners_buf[way];
                             other_owner = 0;
                             if (word_owner_mask)
                             {
-                                other_owner = send_fwd_with_owner_mask(FWD_REQ_S, req_in.addr, req_in.req_id, word_owner_mask, lines_buf[way]);
+                                other_owner = send_fwd_with_owner_mask(FWD_REQ_S, REQ_in.addr, REQ_in.REQ_id, word_owner_mask, lines_buf[way]);
                                 if (other_owner)
                                 {
-                                    fill_reqs(req_in.coh_msg, req_in.req_id, addr_br_real, 0, way, LLC_OS, req_in.hprot, 0, lines_buf[way], req_in.word_mask, reqs_empty_i); /// save this request in reqs buffer
+                                    fill_REQs(REQ_in.coh_msg, REQ_in.REQ_id, addr_br_real, 0, way, LLC_OS, REQ_in.hprot, 0, lines_buf[way], REQ_in.word_mask, REQs_empty_i); /// save this REQuest in REQs buffer
                                 }
                             }
-                            /// send rsp for those words without owners
+                            /// send RSP for those words without owners
                             if (word_no_owner_mask)
                             {
-                                HLS_DEFINE_PROTOCOL("send_rsp_1027");
-                                send_rsp_out(RSP_S, req_in.addr, lines_buf[way], req_in.req_id, req_in.req_id, 0, 0, word_no_owner_mask);
-                                /// if other_owner is 0, then it means no transient state in reqs, and we can change state and shares here
+                                HLS_DEFINE_PROTOCOL("send_RSP_1027");
+                                send_RSP_out(RSP_S, REQ_in.addr, lines_buf[way], REQ_in.REQ_id, REQ_in.REQ_id, 0, 0, word_no_owner_mask);
+                                /// if other_owner is 0, then it means no transient state in REQs, and we can change state and shares here
                                 if (!other_owner)
                                 {
                                     state_buf[way] = LLC_S;
-                                    sharers_buf[way] = 1 << req_in.req_id;
+                                    sharers_buf[way] = 1 << REQ_in.REQ_id;
                                 }
                             }
                         }
@@ -1032,9 +1032,9 @@ void LLC::ctrl()
                         case LLC_S:
                         {
                             /// REQS_S;
-                            HLS_DEFINE_PROTOCOL("send_rsp_1039");
-                            send_rsp_out(RSP_S, req_in.addr, lines_buf[way], req_in.req_id, req_in.req_id, 0, 0, req_in.word_mask);
-                            sharers_buf[way] = sharers_buf[way] | (1 << req_in.req_id);
+                            HLS_DEFINE_PROTOCOL("send_RSP_1039");
+                            send_RSP_out(RSP_S, REQ_in.addr, lines_buf[way], REQ_in.REQ_id, REQ_in.REQ_id, 0, 0, REQ_in.word_mask);
+                            sharers_buf[way] = sharers_buf[way] | (1 << REQ_in.REQ_id);
                         }
                         break;
 
@@ -1054,55 +1054,55 @@ void LLC::ctrl()
                         case LLC_I:
                         {
 
-                            if (req_in.word_mask != WORD_MASK_ALL)
+                            if (REQ_in.word_mask != WORD_MASK_ALL)
                             {
-                                HLS_DEFINE_PROTOCOL("send_mem_req_1059");
-                                send_mem_req(READ, req_in.addr, req_in.hprot, 0);
-                                get_mem_rsp(lines_buf[way]);
+                                HLS_DEFINE_PROTOCOL("send_mem_REQ_1059");
+                                send_mem_REQ(READ, REQ_in.addr, REQ_in.hprot, 0);
+                                get_mem_RSP(lines_buf[way]);
                             }
-                            owners_buf[way] = req_in.word_mask;
+                            owners_buf[way] = REQ_in.word_mask;
                             for (int i = 0; i < WORDS_PER_LINE; i++)
                             {
                                 HLS_UNROLL_LOOP(ON, "set-ownermask");
-                                if (req_in.word_mask & (1 << i))
+                                if (REQ_in.word_mask & (1 << i))
                                 {
-                                    lines_buf[way].range(CACHE_ID_WIDTH - 1 + i * BITS_PER_WORD, i * BITS_PER_WORD) = req_in.req_id;
+                                    lines_buf[way].range(CACHE_ID_WIDTH - 1 + i * BITS_PER_WORD, i * BITS_PER_WORD) = REQ_in.REQ_id;
                                 }
                             }
-                            hprots_buf[way] = req_in.hprot;
+                            hprots_buf[way] = REQ_in.hprot;
                             tag_buf[way] = line_br.tag;
                             dirty_bits_buf[way] = 0;
                             state_buf[way] = LLC_V;
                             {
-                                HLS_DEFINE_PROTOCOL("send_rsp_1078");
-                                send_rsp_out(RSP_O, req_in.addr, lines_buf[way], req_in.req_id, req_in.req_id, 0, 0, req_in.word_mask);
+                                HLS_DEFINE_PROTOCOL("send_RSP_1078");
+                                send_RSP_out(RSP_O, REQ_in.addr, lines_buf[way], REQ_in.REQ_id, REQ_in.REQ_id, 0, 0, REQ_in.word_mask);
                             }
                         }
                         break;
                         case LLC_V:
                         {
                             /// REQO_V;
-                            word_owner_mask = owners_buf[way] & req_in.word_mask;
-                            word_no_owner_mask = req_in.word_mask & ~owners_buf[way];
+                            word_owner_mask = owners_buf[way] & REQ_in.word_mask;
+                            word_no_owner_mask = REQ_in.word_mask & ~owners_buf[way];
                             if (word_owner_mask)
                             {
-                                send_fwd_with_owner_mask(FWD_REQ_O, req_in.addr, req_in.req_id, word_owner_mask, lines_buf[way]);
+                                send_fwd_with_owner_mask(FWD_REQ_O, REQ_in.addr, REQ_in.REQ_id, word_owner_mask, lines_buf[way]);
                             }
                             if (word_no_owner_mask)
                             {
-                                HLS_DEFINE_PROTOCOL("send_rsp_1100");
-                                send_rsp_out(RSP_O, req_in.addr, lines_buf[way], req_in.req_id, req_in.req_id, 0, 0, word_no_owner_mask);
+                                HLS_DEFINE_PROTOCOL("send_RSP_1100");
+                                send_RSP_out(RSP_O, REQ_in.addr, lines_buf[way], REQ_in.REQ_id, REQ_in.REQ_id, 0, 0, word_no_owner_mask);
                             }
                             /// update owner
                             for (int i = 0; i < WORDS_PER_LINE; i++)
                             {
                                 HLS_UNROLL_LOOP(ON, "set-ownermask");
-                                if (req_in.word_mask & (1 << i))
+                                if (REQ_in.word_mask & (1 << i))
                                 {
-                                    lines_buf[way].range(CACHE_ID_WIDTH - 1 + i * BITS_PER_WORD, i * BITS_PER_WORD) = req_in.req_id;
+                                    lines_buf[way].range(CACHE_ID_WIDTH - 1 + i * BITS_PER_WORD, i * BITS_PER_WORD) = REQ_in.REQ_id;
                                 }
                             }
-                            owners_buf[way] |= req_in.word_mask;
+                            owners_buf[way] |= REQ_in.word_mask;
                         }
                         break;
 
@@ -1118,13 +1118,13 @@ void LLC::ctrl()
                                 HLS_DEFINE_PROTOCOL("send_fwd_1116");
                                 if (sharers_buf[way] & (1 << i))
                                 {
-                                    if (req_in.req_id == i)
+                                    if (REQ_in.REQ_id == i)
                                     {
                                         /// upgrade
                                     }
                                     else
                                     {
-                                        send_fwd_out(FWD_INV_SPDX, req_in.addr, req_in.req_id, i, req_in.word_mask);
+                                        send_fwd_out(FWD_INV_SPDX, REQ_in.addr, REQ_in.REQ_id, i, REQ_in.word_mask);
                                         cnt++;
                                     }
                                 }
@@ -1135,23 +1135,23 @@ void LLC::ctrl()
                             for (int i = 0; i < WORDS_PER_LINE; i++)
                             {
                                 HLS_UNROLL_LOOP(ON, "set-ownermask");
-                                if (req_in.word_mask & (1 << i))
-                                    lines_buf[way].range(CACHE_ID_WIDTH - 1 + i * BITS_PER_WORD, i * BITS_PER_WORD) = req_in.req_id;
+                                if (REQ_in.word_mask & (1 << i))
+                                    lines_buf[way].range(CACHE_ID_WIDTH - 1 + i * BITS_PER_WORD, i * BITS_PER_WORD) = REQ_in.REQ_id;
                             }
-                            owners_buf[way] = req_in.word_mask;
+                            owners_buf[way] = REQ_in.word_mask;
 
                             if (cnt == 0)
                             {
                                 /// only upgrade
                                 /// @TODO send original data
-                                HLS_DEFINE_PROTOCOL("send_rsp_1198");
-                                send_rsp_out(RSP_O, req_in.addr, lines_buf[way], req_in.req_id, req_in.req_id, 0, 0, req_in.word_mask);
+                                HLS_DEFINE_PROTOCOL("send_RSP_1198");
+                                send_RSP_out(RSP_O, REQ_in.addr, lines_buf[way], REQ_in.REQ_id, REQ_in.REQ_id, 0, 0, REQ_in.word_mask);
                             }
                             else
                             {
                                 /// wait for invack
-                                fill_reqs(req_in.coh_msg, req_in.req_id, addr_br_real, 0, way, LLC_SO, req_in.hprot, 0, lines_buf[way], req_in.word_mask, reqs_empty_i); /// save this request in reqs buffer
-                                reqs[reqs_empty_i].invack_cnt = cnt;
+                                fill_REQs(REQ_in.coh_msg, REQ_in.REQ_id, addr_br_real, 0, way, LLC_SO, REQ_in.hprot, 0, lines_buf[way], REQ_in.word_mask, REQs_empty_i); /// save this REQuest in REQs buffer
+                                REQs[REQs_empty_i].invack_cnt = cnt;
                             }
                         }
                         break;
@@ -1173,49 +1173,49 @@ void LLC::ctrl()
                         {
                             {
                                 HLS_DEFINE_PROTOCOL("send_men_1140");
-                                send_mem_req(READ, req_in.addr, req_in.hprot, 0);
-                                get_mem_rsp(lines_buf[way]);
+                                send_mem_REQ(READ, REQ_in.addr, REQ_in.hprot, 0);
+                                get_mem_RSP(lines_buf[way]);
                             }
 
                             /// write new data
                             for (int i = 0; i < WORDS_PER_LINE; i++)
                             {
                                 HLS_UNROLL_LOOP(ON, "set-ownermask-1151");
-                                if (req_in.word_mask & (1 << i))
+                                if (REQ_in.word_mask & (1 << i))
                                 {
-                                    lines_buf[way].range((i + 1) * BITS_PER_WORD - 1, i * BITS_PER_WORD) = req_in.line.range((i + 1) * BITS_PER_WORD - 1, i * BITS_PER_WORD);
+                                    lines_buf[way].range((i + 1) * BITS_PER_WORD - 1, i * BITS_PER_WORD) = REQ_in.line.range((i + 1) * BITS_PER_WORD - 1, i * BITS_PER_WORD);
                                 }
                             }
-                            hprots_buf[way] = req_in.hprot;
+                            hprots_buf[way] = REQ_in.hprot;
                             tag_buf[way] = line_br.tag;
                             dirty_bits_buf[way] = 1;
                             state_buf[way] = LLC_V;
                             {
-                                HLS_DEFINE_PROTOCOL("send_rsp_1157");
-                                send_rsp_out(RSP_O, req_in.addr, lines_buf[way], req_in.req_id, req_in.req_id, 0, 0, req_in.word_mask);
+                                HLS_DEFINE_PROTOCOL("send_RSP_1157");
+                                send_RSP_out(RSP_O, REQ_in.addr, lines_buf[way], REQ_in.REQ_id, REQ_in.REQ_id, 0, 0, REQ_in.word_mask);
                             }
                         }
                         break;
                         case LLC_V:
                         {
-                            word_owner_mask = owners_buf[way] & req_in.word_mask;
-                            word_no_owner_mask = req_in.word_mask & ~owners_buf[way];
+                            word_owner_mask = owners_buf[way] & REQ_in.word_mask;
+                            word_no_owner_mask = REQ_in.word_mask & ~owners_buf[way];
                             if (word_owner_mask)
                             {
-                                send_fwd_with_owner_mask(FWD_REQ_O, req_in.addr, req_in.req_id, word_owner_mask, lines_buf[way]);
+                                send_fwd_with_owner_mask(FWD_REQ_O, REQ_in.addr, REQ_in.REQ_id, word_owner_mask, lines_buf[way]);
                             }
                             if (word_no_owner_mask)
                             {
-                                HLS_DEFINE_PROTOCOL("req_wt send rsp_o in llc_v");
-                                send_rsp_out(RSP_O, req_in.addr, lines_buf[way], req_in.req_id, req_in.req_id, 0, 0, word_no_owner_mask);
+                                HLS_DEFINE_PROTOCOL("REQ_wt send RSP_o in llc_v");
+                                send_RSP_out(RSP_O, REQ_in.addr, lines_buf[way], REQ_in.REQ_id, REQ_in.REQ_id, 0, 0, word_no_owner_mask);
                             }
                             /// write new data
                             for (int i = 0; i < WORDS_PER_LINE; i++)
                             {
                                 HLS_UNROLL_LOOP(ON, "set-ownermask-1176");
-                                if (req_in.word_mask & (1 << i))
+                                if (REQ_in.word_mask & (1 << i))
                                 {
-                                    lines_buf[way].range((i + 1) * BITS_PER_WORD - 1, i * BITS_PER_WORD) = req_in.line.range((i + 1) * BITS_PER_WORD - 1, i * BITS_PER_WORD);
+                                    lines_buf[way].range((i + 1) * BITS_PER_WORD - 1, i * BITS_PER_WORD) = REQ_in.line.range((i + 1) * BITS_PER_WORD - 1, i * BITS_PER_WORD);
                                     owners_buf[way] = owners_buf[way] & (~(1 << i)); /// clear owner bit
                                 }
                             }
@@ -1229,14 +1229,14 @@ void LLC::ctrl()
                             for (int i = 0; i < WORDS_PER_LINE; i++)
                             {
                                 HLS_UNROLL_LOOP(ON, "set-ownermask-1176");
-                                if (req_in.word_mask & (1 << i))
+                                if (REQ_in.word_mask & (1 << i))
                                 {
-                                    lines_buf[way].range((i + 1) * BITS_PER_WORD - 1, i * BITS_PER_WORD) = req_in.line.range((i + 1) * BITS_PER_WORD - 1, i * BITS_PER_WORD);
+                                    lines_buf[way].range((i + 1) * BITS_PER_WORD - 1, i * BITS_PER_WORD) = REQ_in.line.range((i + 1) * BITS_PER_WORD - 1, i * BITS_PER_WORD);
                                 }
                             }
-                            int cnt = send_inv_with_sharer_list(req_in.addr, sharers_buf[way]);
-                            fill_reqs(req_in.coh_msg, req_in.req_id, addr_br_real, 0, way, LLC_SV, req_in.hprot, 0, lines_buf[way], req_in.word_mask, reqs_empty_i); /// save this request in reqs buffer
-                            reqs[reqs_empty_i].invack_cnt = cnt;
+                            int cnt = send_inv_with_sharer_list(REQ_in.addr, sharers_buf[way]);
+                            fill_REQs(REQ_in.coh_msg, REQ_in.REQ_id, addr_br_real, 0, way, LLC_SV, REQ_in.hprot, 0, lines_buf[way], REQ_in.word_mask, REQs_empty_i); /// save this REQuest in REQs buffer
+                            REQs[REQs_empty_i].invack_cnt = cnt;
                             dirty_bits_buf[way] = 1;
                         }
                         break;
@@ -1257,37 +1257,37 @@ void LLC::ctrl()
                         case LLC_I:
                         {
                             {
-                                HLS_DEFINE_PROTOCOL("send_men_req_wtfwd");
-                                send_mem_req(READ, req_in.addr, req_in.hprot, 0);
-                                get_mem_rsp(lines_buf[way]);
+                                HLS_DEFINE_PROTOCOL("send_men_REQ_wtfwd");
+                                send_mem_REQ(READ, REQ_in.addr, REQ_in.hprot, 0);
+                                get_mem_RSP(lines_buf[way]);
                             }
 
                             /// write new data
                             for (int i = 0; i < WORDS_PER_LINE; i++)
                             {
                                 HLS_UNROLL_LOOP(ON, "set-ownermask-1151");
-                                if (req_in.word_mask & (1 << i))
+                                if (REQ_in.word_mask & (1 << i))
                                 {
-                                    lines_buf[way].range((i + 1) * BITS_PER_WORD - 1, i * BITS_PER_WORD) = req_in.line.range((i + 1) * BITS_PER_WORD - 1, i * BITS_PER_WORD);
+                                    lines_buf[way].range((i + 1) * BITS_PER_WORD - 1, i * BITS_PER_WORD) = REQ_in.line.range((i + 1) * BITS_PER_WORD - 1, i * BITS_PER_WORD);
                                 }
                             }
-                            hprots_buf[way] = req_in.hprot;
+                            hprots_buf[way] = REQ_in.hprot;
                             tag_buf[way] = line_br.tag;
                             dirty_bits_buf[way] = 1;
                             state_buf[way] = LLC_V;
                             {
-                                HLS_DEFINE_PROTOCOL("send_rsp_1157");
-                                send_rsp_out(RSP_O, req_in.addr, lines_buf[way], req_in.req_id, req_in.req_id, 0, 0, req_in.word_mask);
+                                HLS_DEFINE_PROTOCOL("send_RSP_1157");
+                                send_RSP_out(RSP_O, REQ_in.addr, lines_buf[way], REQ_in.REQ_id, REQ_in.REQ_id, 0, 0, REQ_in.word_mask);
                             }
                         }
                         break;
                         case LLC_V:
                         {
-                            word_owner_mask = owners_buf[way] & req_in.word_mask;
-                            word_no_owner_mask = req_in.word_mask & ~owners_buf[way];
+                            word_owner_mask = owners_buf[way] & REQ_in.word_mask;
+                            word_no_owner_mask = REQ_in.word_mask & ~owners_buf[way];
                             if (word_owner_mask)
                             {
-                                send_fwd_with_owner_mask_data(FWD_WTfwd, req_in.addr, req_in.req_id, word_owner_mask, lines_buf[way], req_in.line);
+                                send_fwd_with_owner_mask_data(FWD_WTfwd, REQ_in.addr, REQ_in.REQ_id, word_owner_mask, lines_buf[way], REQ_in.line);
                             }
                             if (word_no_owner_mask)
                             {
@@ -1296,12 +1296,12 @@ void LLC::ctrl()
                                     HLS_UNROLL_LOOP(ON, "set-ownermask-1176");
                                     if (word_no_owner_mask & (1 << i))
                                     {
-                                        lines_buf[way].range((i + 1) * BITS_PER_WORD - 1, i * BITS_PER_WORD) = req_in.line.range((i + 1) * BITS_PER_WORD - 1, i * BITS_PER_WORD);
+                                        lines_buf[way].range((i + 1) * BITS_PER_WORD - 1, i * BITS_PER_WORD) = REQ_in.line.range((i + 1) * BITS_PER_WORD - 1, i * BITS_PER_WORD);
                                     }
                                 }
                                 {
-                                    HLS_DEFINE_PROTOCOL("req_wtfwd send rsp o when llc_v");
-                                    send_rsp_out(RSP_O, req_in.addr, lines_buf[way], req_in.req_id, req_in.req_id, 0, 0, word_no_owner_mask);
+                                    HLS_DEFINE_PROTOCOL("REQ_wtfwd send RSP o when llc_v");
+                                    send_RSP_out(RSP_O, REQ_in.addr, lines_buf[way], REQ_in.REQ_id, REQ_in.REQ_id, 0, 0, word_no_owner_mask);
                                 }
                             }
                             dirty_bits_buf[way] = 1;
@@ -1314,14 +1314,14 @@ void LLC::ctrl()
                             for (int i = 0; i < WORDS_PER_LINE; i++)
                             {
                                 HLS_UNROLL_LOOP(ON, "set-ownermask-1176");
-                                if (req_in.word_mask & (1 << i))
+                                if (REQ_in.word_mask & (1 << i))
                                 {
-                                    lines_buf[way].range((i + 1) * BITS_PER_WORD - 1, i * BITS_PER_WORD) = req_in.line.range((i + 1) * BITS_PER_WORD - 1, i * BITS_PER_WORD);
+                                    lines_buf[way].range((i + 1) * BITS_PER_WORD - 1, i * BITS_PER_WORD) = REQ_in.line.range((i + 1) * BITS_PER_WORD - 1, i * BITS_PER_WORD);
                                 }
                             }
-                            int cnt = send_inv_with_sharer_list(req_in.addr, sharers_buf[way]);
-                            fill_reqs(req_in.coh_msg, req_in.req_id, addr_br_real, 0, way, LLC_SV, req_in.hprot, 0, lines_buf[way], req_in.word_mask, reqs_empty_i); /// save this request in reqs buffer
-                            reqs[reqs_empty_i].invack_cnt = cnt;
+                            int cnt = send_inv_with_sharer_list(REQ_in.addr, sharers_buf[way]);
+                            fill_REQs(REQ_in.coh_msg, REQ_in.REQ_id, addr_br_real, 0, way, LLC_SV, REQ_in.hprot, 0, lines_buf[way], REQ_in.word_mask, REQs_empty_i); /// save this REQuest in REQs buffer
+                            REQs[REQs_empty_i].invack_cnt = cnt;
                             dirty_bits_buf[way] = 1;
                         }
                         break;
@@ -1334,8 +1334,8 @@ void LLC::ctrl()
 
                     case REQ_Odata:
 
-                        /// Read with ReqOdata
-                        if (req_in.hprot == INSTR)
+                        /// Read with REQOdata
+                        if (REQ_in.hprot == INSTR)
                         {
                             fcs_prio_buf[way] = 1;
                         }
@@ -1349,23 +1349,23 @@ void LLC::ctrl()
                         {
                             {
                                 HLS_DEFINE_PROTOCOL("send_men_1219");
-                                send_mem_req(READ, req_in.addr, req_in.hprot, 0);
-                                get_mem_rsp(lines_buf[way]);
+                                send_mem_REQ(READ, REQ_in.addr, REQ_in.hprot, 0);
+                                get_mem_RSP(lines_buf[way]);
                             }
                             {
-                                HLS_DEFINE_PROTOCOL("send_rsp_1238");
-                                send_rsp_out(RSP_Odata, req_in.addr, lines_buf[way], req_in.req_id, req_in.req_id, 0, 0, req_in.word_mask);
+                                HLS_DEFINE_PROTOCOL("send_RSP_1238");
+                                send_RSP_out(RSP_Odata, REQ_in.addr, lines_buf[way], REQ_in.REQ_id, REQ_in.REQ_id, 0, 0, REQ_in.word_mask);
                             }
-                            owners_buf[way] = req_in.word_mask;
+                            owners_buf[way] = REQ_in.word_mask;
                             for (int i = 0; i < WORDS_PER_LINE; i++)
                             {
                                 HLS_UNROLL_LOOP(ON, "set-ownermask");
-                                if (req_in.word_mask & (1 << i))
+                                if (REQ_in.word_mask & (1 << i))
                                 {
-                                    lines_buf[way].range(CACHE_ID_WIDTH - 1 + i * BITS_PER_WORD, i * BITS_PER_WORD) = req_in.req_id;
+                                    lines_buf[way].range(CACHE_ID_WIDTH - 1 + i * BITS_PER_WORD, i * BITS_PER_WORD) = REQ_in.REQ_id;
                                 }
                             }
-                            hprots_buf[way] = req_in.hprot;
+                            hprots_buf[way] = REQ_in.hprot;
                             tag_buf[way] = line_br.tag;
                             dirty_bits_buf[way] = 0;
                             state_buf[way] = LLC_V;
@@ -1374,27 +1374,27 @@ void LLC::ctrl()
                         case LLC_V:
                         {
                             /// REQO_V;
-                            word_owner_mask = owners_buf[way] & req_in.word_mask;
-                            word_no_owner_mask = req_in.word_mask & ~owners_buf[way];
+                            word_owner_mask = owners_buf[way] & REQ_in.word_mask;
+                            word_no_owner_mask = REQ_in.word_mask & ~owners_buf[way];
                             if (word_owner_mask)
                             {
-                                send_fwd_with_owner_mask(FWD_REQ_Odata, req_in.addr, req_in.req_id, word_owner_mask, lines_buf[way]);
+                                send_fwd_with_owner_mask(FWD_REQ_Odata, REQ_in.addr, REQ_in.REQ_id, word_owner_mask, lines_buf[way]);
                             }
                             if (word_no_owner_mask)
                             {
-                                HLS_DEFINE_PROTOCOL("send_rsp_1249");
-                                send_rsp_out(RSP_Odata, req_in.addr, lines_buf[way], req_in.req_id, req_in.req_id, 0, 0, word_no_owner_mask);
+                                HLS_DEFINE_PROTOCOL("send_RSP_1249");
+                                send_RSP_out(RSP_Odata, REQ_in.addr, lines_buf[way], REQ_in.REQ_id, REQ_in.REQ_id, 0, 0, word_no_owner_mask);
                             }
                             /// update owner
                             for (int i = 0; i < WORDS_PER_LINE; i++)
                             {
                                 HLS_UNROLL_LOOP(ON, "set-ownermask");
-                                if (req_in.word_mask & (1 << i))
+                                if (REQ_in.word_mask & (1 << i))
                                 {
-                                    lines_buf[way].range(CACHE_ID_WIDTH - 1 + i * BITS_PER_WORD, i * BITS_PER_WORD) = req_in.req_id;
+                                    lines_buf[way].range(CACHE_ID_WIDTH - 1 + i * BITS_PER_WORD, i * BITS_PER_WORD) = REQ_in.REQ_id;
                                 }
                             }
-                            owners_buf[way] |= req_in.word_mask;
+                            owners_buf[way] |= REQ_in.word_mask;
                         }
                         break;
 
@@ -1411,14 +1411,14 @@ void LLC::ctrl()
                                 HLS_DEFINE_PROTOCOL("send_fwd_1116");
                                 if (sharers_buf[way] & (1 << i))
                                 {
-                                    if (req_in.req_id == i)
+                                    if (REQ_in.REQ_id == i)
                                     {
                                         /// upgrade
                                         sharers_buf[way] &= ~(1 << i);
                                     }
                                     else
                                     {
-                                        send_fwd_out(FWD_INV_SPDX, req_in.addr, req_in.req_id, i, req_in.word_mask);
+                                        send_fwd_out(FWD_INV_SPDX, REQ_in.addr, REQ_in.REQ_id, i, REQ_in.word_mask);
                                         cnt++;
                                     }
                                 }
@@ -1429,22 +1429,22 @@ void LLC::ctrl()
                             for (int i = 0; i < WORDS_PER_LINE; i++)
                             {
                                 HLS_UNROLL_LOOP(ON, "set-ownermask");
-                                if (req_in.word_mask & (1 << i))
-                                    lines_buf[way].range(CACHE_ID_WIDTH - 1 + i * BITS_PER_WORD, i * BITS_PER_WORD) = req_in.req_id;
+                                if (REQ_in.word_mask & (1 << i))
+                                    lines_buf[way].range(CACHE_ID_WIDTH - 1 + i * BITS_PER_WORD, i * BITS_PER_WORD) = REQ_in.REQ_id;
                             }
-                            owners_buf[way] = req_in.word_mask;
+                            owners_buf[way] = REQ_in.word_mask;
 
                             if (cnt == 0)
                             {
                                 /// only upgrade
-                                HLS_DEFINE_PROTOCOL("send_rsp_1198");
-                                send_rsp_out(RSP_Odata, req_in.addr, temp, req_in.req_id, req_in.req_id, 0, 0, req_in.word_mask);
+                                HLS_DEFINE_PROTOCOL("send_RSP_1198");
+                                send_RSP_out(RSP_Odata, REQ_in.addr, temp, REQ_in.REQ_id, REQ_in.REQ_id, 0, 0, REQ_in.word_mask);
                             }
                             else
                             {
                                 /// wait for invack
-                                fill_reqs(req_in.coh_msg, req_in.req_id, addr_br_real, 0, way, LLC_SO, req_in.hprot, 0, temp, req_in.word_mask, reqs_empty_i); /// save this request in reqs buffer
-                                reqs[reqs_empty_i].invack_cnt = cnt;
+                                fill_REQs(REQ_in.coh_msg, REQ_in.REQ_id, addr_br_real, 0, way, LLC_SO, REQ_in.hprot, 0, temp, REQ_in.word_mask, REQs_empty_i); /// save this REQuest in REQs buffer
+                                REQs[REQs_empty_i].invack_cnt = cnt;
                             }
                         }
                         break;
@@ -1455,11 +1455,11 @@ void LLC::ctrl()
                         break;
 
                     case REQ_WB:
-                        word_owner_mask = owners_buf[way] & req_in.word_mask;
+                        word_owner_mask = owners_buf[way] & REQ_in.word_mask;
                         /// send response
                         {
-                            HLS_DEFINE_PROTOCOL("send_rsp_1330");
-                            send_rsp_out(RSP_WB_ACK, req_in.addr, 0, req_in.req_id, req_in.req_id, 0, 0, req_in.word_mask);
+                            HLS_DEFINE_PROTOCOL("send_RSP_1330");
+                            send_RSP_out(RSP_WB_ACK, REQ_in.addr, 0, REQ_in.REQ_id, REQ_in.REQ_id, 0, 0, REQ_in.word_mask);
                         }
                         if (word_owner_mask == 0)
                             break; /// in stable states, no owner, no need to do anything
@@ -1469,9 +1469,9 @@ void LLC::ctrl()
                             if (word_owner_mask & (1 << i))
                             {
                                 /// found a mathcing bit in mask
-                                if (req_in.req_id == lines_buf[way].range(CACHE_ID_WIDTH - 1 + i * BITS_PER_WORD, i * BITS_PER_WORD)) /// if owner id == req id
+                                if (REQ_in.REQ_id == lines_buf[way].range(CACHE_ID_WIDTH - 1 + i * BITS_PER_WORD, i * BITS_PER_WORD)) /// if owner id == REQ id
                                 {
-                                    lines_buf[way].range((i + 1) * BITS_PER_WORD - 1, i * BITS_PER_WORD) = req_in.line.range((i + 1) * BITS_PER_WORD - 1, i * BITS_PER_WORD); /// write back new data
+                                    lines_buf[way].range((i + 1) * BITS_PER_WORD - 1, i * BITS_PER_WORD) = REQ_in.line.range((i + 1) * BITS_PER_WORD - 1, i * BITS_PER_WORD); /// write back new data
                                     owners_buf[way] = owners_buf[way] & (~(1 << i));                                                                                          /// clear owner bit
                                     dirty_bits_buf[way] = 1;
                                 }
@@ -1486,16 +1486,16 @@ void LLC::ctrl()
             }
         }
 
-        else if (is_dma_req_to_get || is_dma_read_to_resume || is_dma_write_to_resume)
+        else if (is_dma_REQ_to_get || is_dma_read_to_resume || is_dma_write_to_resume)
         {
 
             bool evict_dirty = 0;
 
-            if (is_dma_req_to_get)
+            if (is_dma_REQ_to_get)
             {
                 DMA_BURST;
 
-                if (dma_req_in.coh_msg == REQ_DMA_READ_BURST)
+                if (dma_REQ_in.coh_msg == REQ_DMA_READ_BURST)
                 {
                     dma_read_pending = true;
                     is_dma_read_to_resume = true;
@@ -1506,7 +1506,7 @@ void LLC::ctrl()
                     is_dma_write_to_resume = true;
                 }
 
-                dma_read_length = dma_req_in.line.range(BITS_PER_LINE - 1, BITS_PER_LINE - ADDR_BITS).to_uint();
+                dma_read_length = dma_REQ_in.line.range(BITS_PER_LINE - 1, BITS_PER_LINE - ADDR_BITS).to_uint();
                 dma_length = 0;
                 dma_done = 0;
                 dma_start = true;
@@ -1514,10 +1514,10 @@ void LLC::ctrl()
 
             addr_breakdown_llc_t evict_addr_br;
             evict_addr_br.breakdown(addr_evict_real);
-            bitset<LLC_REQS_BITS> reqs_empty_i;
+            bitset<LLC_REQS_BITS> REQs_empty_i;
 
 
-            if (reqs_cnt == 0 || reqs_peek_req(evict_addr_br, reqs_empty_i))
+            if (REQs_cnt == 0 || REQs_peek_REQ(evict_addr_br, REQs_empty_i))
             {
                 /// nothing
             }
@@ -1529,16 +1529,16 @@ void LLC::ctrl()
                     /// Recall (may or may not evict depending on miss/hit)
                     if (state_buf[way] == LLC_V && owners_buf[way] != 0)
                     {
-                        send_fwd_with_owner_mask(FWD_RVK_O, addr_evict, dma_req_in.req_id, owners_buf[way], 0);
-                        fill_reqs(req_in.coh_msg, req_in.req_id, evict_addr_br, 0, way, LLC_OV, hprots_buf[way], 0, req_in.line, owners_buf[way], reqs_empty_i);
+                        send_fwd_with_owner_mask(FWD_RVK_O, addr_evict, dma_REQ_in.REQ_id, owners_buf[way], 0);
+                        fill_REQs(REQ_in.coh_msg, REQ_in.REQ_id, evict_addr_br, 0, way, LLC_OV, hprots_buf[way], 0, REQ_in.line, owners_buf[way], REQs_empty_i);
                         recall_addr = addr_evict;
                         recall_pending = true;
                     }
-                    else if (state_buf[way] == LLC_S && dma_req_in.coh_msg == REQ_DMA_WRITE_BURST)
+                    else if (state_buf[way] == LLC_S && dma_REQ_in.coh_msg == REQ_DMA_WRITE_BURST)
                     {
                         int cnt = send_inv_with_sharer_list(addr_evict, sharers_buf[way]);
-                        fill_reqs(req_in.coh_msg, req_in.req_id, evict_addr_br, 0, way, LLC_SV, hprots_buf[way], 0, req_in.line, owners_buf[way], reqs_empty_i);
-                        reqs[reqs_empty_i].invack_cnt = cnt;
+                        fill_REQs(REQ_in.coh_msg, REQ_in.REQ_id, evict_addr_br, 0, way, LLC_SV, hprots_buf[way], 0, REQ_in.line, owners_buf[way], REQs_empty_i);
+                        REQs[REQs_empty_i].invack_cnt = cnt;
                         recall_addr = addr_evict;
                         recall_pending = true;
                     }
@@ -1569,8 +1569,8 @@ void LLC::ctrl()
 
                         if (evict_dirty)
                         {
-                            HLS_DEFINE_PROTOCOL("send_mem_req-6");
-                            send_mem_req(WRITE, addr_evict, hprots_buf[way], lines_buf[way]);
+                            HLS_DEFINE_PROTOCOL("send_mem_REQ-6");
+                            send_mem_REQ(WRITE, addr_evict, hprots_buf[way], lines_buf[way]);
                         }
 
                         state_buf[way] = LLC_I;
@@ -1593,7 +1593,7 @@ void LLC::ctrl()
                         invack_cnt_t dma_info;
 
                         if (dma_start)
-                            dma_read_woffset = dma_req_in.word_offset_t;
+                            dma_read_woffset = dma_REQ_in.word_offset_t;
                         else
                             dma_read_woffset = 0;
 
@@ -1615,18 +1615,18 @@ void LLC::ctrl()
                         {
 
                             DMA_READ_I;
-                            HLS_DEFINE_PROTOCOL("send_mem_req-7");
-                            send_mem_req(READ, dma_addr, dma_req_in.hprot, 0);
-                            get_mem_rsp(lines_buf[way]);
+                            HLS_DEFINE_PROTOCOL("send_mem_REQ-7");
+                            send_mem_REQ(READ, dma_addr, dma_REQ_in.hprot, 0);
+                            get_mem_RSP(lines_buf[way]);
                         }
 
                         dma_info[0] = dma_done;
                         dma_info.range(WORD_BITS, 1) = (valid_words - 1);
 
                         {
-                            HLS_DEFINE_PROTOCOL("send_dma_rsp_out");
-                            send_dma_rsp_out(RSP_DATA_DMA, dma_addr, lines_buf[way],
-                                             dma_req_in.req_id, 0, dma_info, dma_read_woffset);
+                            HLS_DEFINE_PROTOCOL("send_dma_RSP_out");
+                            send_dma_RSP_out(RSP_DATA_DMA, dma_addr, lines_buf[way],
+                                             dma_REQ_in.REQ_id, 0, dma_info, dma_read_woffset);
                         }
 
                         if (state_buf[way] == LLC_I)
@@ -1641,8 +1641,8 @@ void LLC::ctrl()
                     { /// is_dma_write_to_resume
                         LLC_DMA_WRITE_BURST;
 
-                        word_offset_t_t dma_write_woffset = dma_req_in.word_offset_t;
-                        dma_length_t valid_words = dma_req_in.valid_words + 1;
+                        word_offset_t_t dma_write_woffset = dma_REQ_in.word_offset_t;
+                        dma_length_t valid_words = dma_REQ_in.valid_words + 1;
                         bool misaligned;
 
                         misaligned = (dma_write_woffset != 0 || valid_words != WORDS_PER_LINE);
@@ -1654,9 +1654,9 @@ void LLC::ctrl()
 
                             if (misaligned)
                             {
-                                HLS_DEFINE_PROTOCOL("send_mem_req-8");
-                                send_mem_req(READ, dma_addr, dma_req_in.hprot, 0);
-                                get_mem_rsp(lines_buf[way]);
+                                HLS_DEFINE_PROTOCOL("send_mem_REQ-8");
+                                send_mem_REQ(READ, dma_addr, dma_REQ_in.hprot, 0);
+                                get_mem_RSP(lines_buf[way]);
                             }
                         }
 
@@ -1671,7 +1671,7 @@ void LLC::ctrl()
 
                                 if (word_cnt < valid_words && i >= dma_write_woffset)
                                 {
-                                    write_word(lines_buf[way], read_word(dma_req_in.line, i), i, 0, WORD);
+                                    write_word(lines_buf[way], read_word(dma_REQ_in.line, i), i, 0, WORD);
                                     word_cnt++;
                                 }
                             }
@@ -1679,7 +1679,7 @@ void LLC::ctrl()
                         else
                         {
 
-                            lines_buf[way] = dma_req_in.line;
+                            lines_buf[way] = dma_REQ_in.line;
                         }
 
                         lines_buf[way] = lines_buf[way];
@@ -1692,7 +1692,7 @@ void LLC::ctrl()
                             tag_buf[way] = line_br.tag;
                         }
 
-                        if (dma_req_in.hprot)
+                        if (dma_REQ_in.hprot)
                         {
 
                             dma_done = true;
@@ -1751,7 +1751,7 @@ void LLC::ctrl()
                 sharers.port1[0][idx] = 0;
             }
         }
-        else if (is_rsp_to_get || is_req_to_get || is_dma_req_to_get || is_dma_read_to_resume || is_dma_write_to_resume)
+        else if (is_RSP_to_get || is_REQ_to_get || is_dma_REQ_to_get || is_dma_read_to_resume || is_dma_write_to_resume)
         {
 
             tags.port1[0][llc_addr] = tag_buf[way];

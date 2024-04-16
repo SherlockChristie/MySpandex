@@ -6,6 +6,7 @@
 #include <type_traits>
 #include <limits>
 #include <cstring>
+#include <cstdint>
 // using namespace std;
 #include "consts.hpp"
 #include "blocks.hpp"
@@ -68,5 +69,20 @@ void WordIns(word_t word, word_offset_t offset, line_t line)
         byte_off++;
     }
 }
+
+void WordExt(word_t word, word_offset_t offset, line_t line)
+// Extract a word in the line according to the offset.
+{
+    uint8_t byte_off = (offset.to_ulong()) * BYTES_PER_WORD;
+    for (int i = 0; i < BYTES_PER_WORD; i++)
+    {
+        word[i] = line[byte_off];
+        byte_off++;
+    }
+}
+
+// void MsgInit()
+// {
+// }
 
 #endif // BIT_UTILS_HPP

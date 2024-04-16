@@ -52,21 +52,24 @@ constexpr int lg2(int x)
 // For each line, two bits indicate whether the line is Invalid, Valid or Shared.
 // For each word within the cache line, a single bit tracks whether the word is Owned in a remote cache.
 // For each Owned word, the data field itself stores the ID of the remote owner.
-#define MAX_DEVS 2 // 2 bits for both sharers and owners ID;
+#define MAX_DEVS 4 // 4=3+1; Also considering LLC.
+#define MAX_DEVS_BITS lg2(MAX_DEVS) // 2 bits for both sharers and owners ID;
 // 为方便计假设只有三种设备且每种设备都只有一个 Cache，用下文定义的 Device type 区分;
-// 实际上 MAX_DEVS = lg2(3); 不过上文定义的lg2函数无法处理3;
+
+#define MAX_MSG 8 // Maximum message waiting to be processed;
 
 // Granularity type
 #define GRAN_WORD 0
 #define GRAN_LINE 1
 
 /// Device type
-// same with TU's type
-#define CPU 0 // MESI
-#define GPU 1 // GPU coh.
-#define ACC 2 // DeNovo
+// same with TU's type (but LLC does not have TU)
+#define SPX 0 // LLC (not using LLC because it is already a class name)
+#define CPU 1 // MESI
+#define GPU 2 // GPU coh.
+#define ACC 3 // DeNovo
 
-/// Request (DEV to TU)
+/// REQuest (DEV to TU)
 #define READ 0   // read
 #define WRITE 1  // write
 #define RMW 2    // read, write and modify
@@ -122,15 +125,16 @@ constexpr int lg2(int x)
 #define LLC_SI 10
 #define LLC_WB 11
 
-/// Request (TU to LLC)
-#define REQ_S 0     /// same as gets
-#define REQ_Odata 1 /// same as getm
-#define REQ_WT 2
-#define REQ_WB 3 /// same as putm
-#define REQ_O 4
-#define REQ_V 5
-#define REQ_WTdata 6
-#define REQ_WTfwd 7
+/// REQuest (TU to LLC)
+#define REQ_NULL 0 // not used REQ.
+#define REQ_S 1
+#define REQ_Odata 2 
+#define REQ_WT 3
+#define REQ_WB 4
+#define REQ_O 5
+#define REQ_V 6
+#define REQ_WTdata 7
+#define REQ_WTfwd 8
 
 /// Forward (LLC to DEV/TU)
 #define FWD_REQ_S 0     /// same as fwd_gets
@@ -143,15 +147,16 @@ constexpr int lg2(int x)
 #define FWD_WTfwd 5
 
 /// Response (DEV/TU to DEV/TU, DEV/TU to LLC, LLC to DEV/TU)
-#define RSP_S 0
-#define RSP_Odata 1   /// same as fwd_req_odata
-#define RSP_INV_ACK 2 /// same as fwd_inv_spdx
-#define RSP_NACK 3
-#define RSP_RVK_O 4 /// same as fwd_rvk_o
-#define RSP_V 5
-#define RSP_O 6 /// same as fwd_req_o
-#define RSP_WT 7
-#define RSP_WTdata 8
-#define RSP_WB_ACK 9
+#define RSP_NULL 0 // not used RSP.
+#define RSP_S 1
+#define RSP_Odata 2   /// same as FWD_REQ_odata
+#define RSP_INV_ACK 3 /// same as fwd_inv_spdx
+#define RSP_NACK 4
+#define RSP_RVK_O 5 /// same as fwd_rvk_o
+#define RSP_V 6
+#define RSP_O 7 /// same as FWD_REQ_o
+#define RSP_WT 8
+#define RSP_WTdata 9
+#define RSP_WB_ACK 10
 
 #endif // __CONSTS_HPP__

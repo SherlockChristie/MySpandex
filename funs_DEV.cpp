@@ -2,17 +2,17 @@
 #include "bit_utils.hpp"
 using namespace std;
 
-void DEV::dev_caller_tu(){};
-void DEV::solve_pending_ReqWB(){};
+void DEV::dev_caller_tu(){}
+void DEV::solve_pending_REQWB(){}
 void DEV::breakdown(DEV_ADDR &dev_addr, addr_t addr)
 {
     dev_addr.b_off = BitSub<ADDR_SIZE, BYTES_OFF>(addr, 0);
     dev_addr.w_off = BitSub<ADDR_SIZE, WORDS_OFF>(addr, BYTES_OFF);
     dev_addr.index = BitSub<ADDR_SIZE, DEV_INDEX_BITS>(addr, WORDS_OFF + BYTES_OFF);
     dev_addr.tag = BitSub<ADDR_SIZE, DEV_TAG_BITS>(addr, DEV_INDEX_BITS + WORDS_OFF + BYTES_OFF);
-};
+}
 
-void DEV::fetch_line(DEV_ADDR &dev_addr, DEV_DATA &dev_data)
+bool DEV::fetch_line(DEV_ADDR &dev_addr, DEV_DATA &dev_data)
 {
     line_t zero = {0};
     unsigned long dev_index = (dev_addr.index).to_ulong();
@@ -20,30 +20,30 @@ void DEV::fetch_line(DEV_ADDR &dev_addr, DEV_DATA &dev_data)
     dev_data.sharers = sharers_buf[dev_index];
     if ((tag_buf[dev_index] != dev_addr.tag) || (dev_data.state == SPX_I))
     {
-        dev_data.hit = 0;
         LineCopy(dev_data.data_line, zero);
+        return 0;
     }
     else
     {
-        dev_data.hit = 1;
         LineCopy(dev_data.data_line, cache[dev_index]);
+        return 1;
     }
-};
+}
 
-// void DEV::rsp_msg(TU &reqor)
+// void DEV::RSP_msg(TU &REQor)
 // {
 //     rsp.dev_msg = msg;
-//     rsp.req_id = req_id;
-//     rsp.to_req = to_req;
+//     rsp.REQ_id = REQ_id;
+//     rsp.to_REQ = to_REQ;
 //     rsp.addr = line_addr;
 //     LineCopy(rsp.data, line);
 
 //     // while (!l2_rsp.nb_can_put()) wait();
 
-//     // l2_rsp.nb_put(rsp);
+//     // l2_rsp.nb_put(RSP);
 // }
 
-void DEV::snd_rsp(LLC_REQ &fwd_in)
+void DEV::snd_RSP(LLC_REQ &fwd_in)
 {
     TU reqor;
     breakdown(dev_addr, fwd_in.addr);
@@ -68,13 +68,13 @@ void DEV::snd_rsp(LLC_REQ &fwd_in)
             // Pending Transition from Expected State;
             else if (dev_data.state == SPX_OI)
             {
-                solve_pending_ReqWB();
+                solve_pending_REQWB();
             }
             else
             {
                 // no ,tu do this, go to tu;
                 // do nack;
-                // if > MAX_RETRY reqV = reqWT;
+                // if > MAX_RETRY REQV = REQWT;
                 dev_caller_tu();
             }
             rsp.to_reqor = 1;
@@ -87,12 +87,12 @@ void DEV::snd_rsp(LLC_REQ &fwd_in)
         if (dev_data.state == SPX_O || dev_data.state == SPX_XO)
         {
             rsp.dev_msg = RSP_O;
-            // no need for pending states, since ReqO does not need a data transfer, just ownership;
+            // no need for pending states, since REQO does not need a data transfer, just ownership;
         }
         // Pending Transition from Expected State;
         else if (dev_data.state == SPX_OI)
         {
-            solve_pending_ReqWB();
+            solve_pending_REQWB();
         }
         rsp.to_reqor = 1;
         dev_data.state == SPX_I;
@@ -106,13 +106,13 @@ void DEV::snd_rsp(LLC_REQ &fwd_in)
             LineCopy(rsp.data, dev_data.data_line);
         }
         else if (dev_data.state == SPX_XO)
-        // that's what FWD_REQ_Odata diff from FWD_REQ_O;
+        // that's how FWD_REQ_Odata diff from FWD_REQ_O;
         {
             wait();
         }
         else if (dev_data.state == SPX_OI)
         {
-            solve_pending_ReqWB();
+            solve_pending_REQWB();
         }
         rsp.to_reqor = 1;
         dev_data.state == SPX_I;
@@ -130,7 +130,7 @@ void DEV::snd_rsp(LLC_REQ &fwd_in)
         }
         else if (dev_data.state == SPX_OI)
         {
-            solve_pending_ReqWB();
+            solve_pending_REQWB();
         }
         rsp.to_reqor = 0;
         dev_data.state == SPX_I;
@@ -161,7 +161,7 @@ void DEV::snd_rsp(LLC_REQ &fwd_in)
         }
         else if (dev_data.state == SPX_OI)
         {
-            solve_pending_ReqWB();
+            solve_pending_REQWB();
         }
         break;
     }

@@ -31,10 +31,12 @@ typedef bitset<LLC_TAG_BITS> llc_tag_t;
 typedef bitset<DEV_INDEX_BITS> dev_index_t;
 typedef bitset<LLC_INDEX_BITS> llc_index_t;
 typedef bitset<MAX_DEVS> sharers_t;
+// One-hot for sharers; e.g. 0b110 indicates that dev_2 and dev_1 shares it;
+typedef bitset<MAX_DEVS_BITS> id_t;
 
 typedef bitset<WORDS_OFF> word_offset_t;
 typedef bitset<BYTES_OFF> byte_offset_t;
-typedef bitset<10> req_type;
+typedef bitset<10> REQ_type;
 
 struct DEV_ADDR
 {
@@ -46,7 +48,7 @@ struct DEV_ADDR
 
 struct DEV_DATA
 {
-    bool hit;
+    // bool hit;
     // word_t data_line[WORDS_PER_LINE]; // word granularity;
     line_t data_line;
     state_t state;
@@ -55,14 +57,15 @@ struct DEV_DATA
 
 struct DEV_REQ
 {
+    id_t dest; // Destination of the REQuest;
     addr_t addr;
-    uint8_t dev_msg; // Request type: read, write or RMW;
-    bool gran;      // 0 for word granularity, 1 for line granularity;
+    uint8_t dev_msg; // REQuest type: read, write or RMW;
+    bool gran;       // 0 for word granularity, 1 for line granularity;
     word_offset_t mask;
 };
 struct DEV_RSP
 {
-    // uint8_t req_id;
+    // uint8_t REQ_id;
     // addr_t addr;
     bool to_reqor;
     uint8_t dev_msg; // Reponse type;
@@ -71,6 +74,7 @@ struct DEV_RSP
 
 struct TU_REQ
 {
+    id_t dest;
     addr_t addr;
     uint8_t tu_msg; // Translate device message into LLC message.(Table II)
     bool gran;      // 0 for word granularity, 1 for line granularity;
@@ -100,18 +104,21 @@ struct LLC_ADDR
 
 struct LLC_REQ
 {
-    addr_t addr;
     uint8_t llc_msg; // Translate device message into LLC message.(Table II)
     bool gran;       // 0 for word granularity, 1 for line granularity;
+    id_t dest; // Destination of the REQuest;
     word_offset_t mask;
+    addr_t addr; // Used when it needs data instead of just ownership.
 };
 struct LLC_RSP
 {
+    uint8_t llc_msg;
+    line_t data;
 };
 
 struct LLC_DATA
 {
-    bool hit;
+    // bool hit;
     // word_t data_line[WORDS_PER_LINE]; // word granularity;
     line_t data_line;
     state_t state;
