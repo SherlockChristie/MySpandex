@@ -9,14 +9,14 @@ void LLC::msg_init()
         // else 
         // do not need, since SPX still needs RSP_NULL/REQ_NULL to indicate that this is not used.
 
-        // RSP init;
-        rsp[i].llc_msg = RSP_NULL;
-        LineCopy(rsp[i].data, llc_data.data_line);
+        // rsp init;
+        rsp_buf[i].llc_msg = RSP_NULL;
+        LineCopy(rsp_buf[i].data, llc_data.data_line);
 
-        // REQ init;
-        req[i].llc_msg = REQ_NULL;
-        req[i].gran = GRAN_WORD;
-        // req[i].addr = TU_REQ.addr;
+        // req init;
+        req_buf[i].llc_msg = REQ_NULL;
+        req_buf[i].gran = GRAN_WORD;
+        // req_buf[i].addr = TU_REQ.addr;
     }
 }
 
@@ -105,7 +105,7 @@ void LLC::rcv_REQ(id_t &tu_id, TU_REQ &TU_REQ)
     breakdown(llc_addr, TU_REQ.addr);
     fetch_line(llc_addr, llc_data);
     msg_init();
-    REQ[id].addr = TU_REQ.addr;
+    req_buf[id].addr = TU_REQ.addr;
     // Default address: the REQ's addr.
 
 
@@ -121,12 +121,12 @@ void LLC::rcv_REQ(id_t &tu_id, TU_REQ &TU_REQ)
         {
             if (llc_data.state == LLC_V || llc_data.state == LLC_S)
             {
-                RSP[0].llc_msg = RSP_V;
+                rsp_buf[id].llc_msg = RSP_V;
             }
             else if (llc_data.state == LLC_O)
             {
-                REQ[0].llc_msg = FWD_REQ_V;
-                REQ[0].dest = find_owner(llc_data);
+                req_buf[id].llc_msg = FWD_REQ_V;
+                req_buf[id].dest = find_owner(llc_data);
             };
             break;
         }
@@ -138,28 +138,28 @@ void LLC::rcv_REQ(id_t &tu_id, TU_REQ &TU_REQ)
                 {
                     // no blocking state to S;
                     llc_data.state = LLC_S;
-                    RSP[0].llc_msg = RSP_S;
+                    rsp_buf[id].llc_msg = RSP_S;
                 }
                 else if (llc_data.state == LLC_O)
                 {
-                    REQ[0].dest = find_owner(llc_data);
-                    if (REQ[0].dest == CPU) // REQS1;
+                    req_buf[id].dest = find_owner(llc_data);
+                    if (req_buf[id].dest == CPU) // REQS1;
                     {
                         // having blocking states;
                         llc_data.state = LLC_OS;
-                        REQ[0].llc_msg = FWD_REQ_S;
+                        req_buf[id].llc_msg = FWD_REQ_S;
                     }
                     else // REQS3;
                     {
                         llc_data.state = LLC_O;
-                        REQ[0].llc_msg = FWD_REQ_Odata;
+                        req_buf[id].llc_msg = FWD_REQ_Odata;
                     }
                 }
                 // REQS3;
                 else if (llc_data.state == LLC_V)
                 {
                     llc_data.state = LLC_O;
-                    RSP[0].llc_msg = RSP_S;
+                    rsp_buf[id].llc_msg = RSP_S;
                 }
                 break;
             }
@@ -167,13 +167,13 @@ void LLC::rcv_REQ(id_t &tu_id, TU_REQ &TU_REQ)
         {
             if (llc_data.state == LLC_O)
             {
-                REQ[0].llc_msg = FWD_REQ_O;
-                REQ[0].dest = find_owner(llc_data);
+                req_buf[id].llc_msg = FWD_REQ_O;
+                req_buf[id].dest = find_owner(llc_data);
                 llc_data.state = LLC_V;
             }
             else if (llc_data.state == LLC_V)
             {
-                RSP[0].llc_msg = RSP_WT;
+                rsp_buf[id].llc_msg = RSP_WT;
                 llc_data.state = LLC_V;
             }
             else if (llc_data.state == LLC_S)
@@ -185,8 +185,8 @@ void LLC::rcv_REQ(id_t &tu_id, TU_REQ &TU_REQ)
                 {
                     if (llc_data.sharers.test(i))
                     {
-                        req[i].llc_msg = FWD_INV;
-                        req[i].dest = bitset<MAX_DEVS_BITS>(i);
+                        req_buf[i].llc_msg = FWD_INV;
+                        req_buf[i].dest = bitset<MAX_DEVS_BITS>(i);
                     }
                 }
             }
@@ -196,13 +196,13 @@ void LLC::rcv_REQ(id_t &tu_id, TU_REQ &TU_REQ)
         {
             if (llc_data.state == LLC_O)
             {
-                REQ[0].llc_msg = FWD_REQ_O;
-                REQ[0].dest = find_owner(llc_data);
+                req_buf[id].llc_msg = FWD_REQ_O;
+                req_buf[id].dest = find_owner(llc_data);
                 // llc_data.state = LLC_O;
             }
             else if (llc_data.state == LLC_V)
             {
-                RSP[0].llc_msg = RSP_O;
+                rsp_buf[id].llc_msg = RSP_O;
                 llc_data.state = LLC_O;
             }
             else if (llc_data.state == LLC_S)
@@ -214,8 +214,8 @@ void LLC::rcv_REQ(id_t &tu_id, TU_REQ &TU_REQ)
                 {
                     if (llc_data.sharers.test(i))
                     {
-                        req[i].llc_msg = FWD_INV;
-                        req[i].dest = bitset<MAX_DEVS_BITS>(i);
+                        req_buf[i].llc_msg = FWD_INV;
+                        req_buf[i].dest = bitset<MAX_DEVS_BITS>(i);
                     }
                 }
             }
@@ -225,14 +225,14 @@ void LLC::rcv_REQ(id_t &tu_id, TU_REQ &TU_REQ)
         {
             if (llc_data.state == LLC_O)
             {
-                REQ[0].llc_msg = FWD_RVK_O;
-                REQ[0].dest = find_owner(llc_data);
+                req_buf[id].llc_msg = FWD_RVK_O;
+                req_buf[id].dest = find_owner(llc_data);
                 // having blocking states;
                 llc_data.state = LLC_OV;
             }
             else if (llc_data.state == LLC_V)
             {
-                RSP[0].llc_msg = RSP_WTdata;
+                rsp_buf[id].llc_msg = RSP_WTdata;
             }
             else if (llc_data.state == LLC_S)
             {
@@ -244,8 +244,8 @@ void LLC::rcv_REQ(id_t &tu_id, TU_REQ &TU_REQ)
                 {
                     if (llc_data.sharers.test(i))
                     {
-                        req[i].llc_msg = FWD_INV;
-                        req[i].dest = bitset<MAX_DEVS_BITS>(i);
+                        req_buf[i].llc_msg = FWD_INV;
+                        req_buf[i].dest = bitset<MAX_DEVS_BITS>(i);
                     }
                 }
             }
@@ -255,15 +255,15 @@ void LLC::rcv_REQ(id_t &tu_id, TU_REQ &TU_REQ)
         {
             if (llc_data.state == LLC_O)
             {
-                REQ[0].llc_msg = FWD_REQ_Odata;
-                REQ[0].dest = find_owner(llc_data);
+                req_buf[id].llc_msg = FWD_REQ_Odata;
+                req_buf[id].dest = find_owner(llc_data);
                 // llc_data.state == LLC_O; // no blocking states;
             }
             else if (llc_data.state == LLC_V)
             {
                 // no blocking states;
                 llc_data.state == LLC_O;
-                RSP[0].llc_msg = RSP_Odata;
+                rsp_buf[id].llc_msg = RSP_Odata;
             }
             else if (llc_data.state == LLC_S)
             {
@@ -275,8 +275,8 @@ void LLC::rcv_REQ(id_t &tu_id, TU_REQ &TU_REQ)
                 {
                     if (llc_data.sharers.test(i))
                     {
-                        req[i].llc_msg = FWD_INV;
-                        req[i].dest = bitset<MAX_DEVS_BITS>(i);
+                        req_buf[i].llc_msg = FWD_INV;
+                        req_buf[i].dest = bitset<MAX_DEVS_BITS>(i);
                     }
                 }
             }
@@ -286,16 +286,16 @@ void LLC::rcv_REQ(id_t &tu_id, TU_REQ &TU_REQ)
         {
             if (llc_data.state == LLC_O)
             {
-                REQ[0].dest = find_owner(llc_data);
-                if (tu_id == REQ[0].dest)
+                req_buf[id].dest = find_owner(llc_data);
+                if (tu_id == req_buf[id].dest)
                 {
                     llc_data.state == LLC_V;
-                    RSP[0].llc_msg = RSP_WB_ACK;
+                    rsp_buf[id].llc_msg = RSP_WB_ACK;
                 }
                 else
                 {
                     // invalid operation for the non-owner to write;
-                    RSP[0].llc_msg = RSP_NACK;
+                    rsp_buf[id].llc_msg = RSP_NACK;
                 }
             }
             // is that possible for a REQ_WB in LLC_S???
@@ -309,8 +309,8 @@ void LLC::rcv_REQ(id_t &tu_id, TU_REQ &TU_REQ)
                 {
                     if (llc_data.sharers.test(i))
                     {
-                        req[i].llc_msg = FWD_INV;
-                        req[i].dest = bitset<MAX_DEVS_BITS>(i);
+                        req_buf[i].llc_msg = FWD_INV;
+                        req_buf[i].dest = bitset<MAX_DEVS_BITS>(i);
                     }
                 }
             }
