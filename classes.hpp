@@ -51,7 +51,7 @@ public:
     void state_mapping(DEV &dev);
     void tu_for_gpu();
     void tu_for_acc();
-    void tu_for_cpu();
+    void tu_for_cpu(TU &sender));
     void tu_callee_dev();
 };
 

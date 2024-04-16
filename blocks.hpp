@@ -57,6 +57,7 @@ struct DEV_REQ
 {
     addr_t addr;
     uint8_t dev_msg; // Request type: read, write or RMW;
+    bool gran;      // 0 for word granularity, 1 for line granularity;
     word_offset_t mask;
 };
 struct DEV_RSP

@@ -37,6 +37,7 @@ void LineCopy(line_t &dest, const line_t &src)
 }
 
 bool LineReady(state_t &state)
+// For TU to decide whether the whole line is ready or not. (line_state is valid, and no word is in Owned.)
 {
     std::bitset<STATE_LINE> state_line = BitSub<STATE_BITS, STATE_LINE>(state, STATE_WORDS);
     std::bitset<STATE_WORDS> state_words = BitSub<STATE_BITS, STATE_WORDS>(state, 0);
@@ -58,9 +59,9 @@ bool LineReady(state_t &state)
 // }
 
 void WordIns(word_t word, word_offset_t offset, line_t line)
+// Insert a word in the line according to the offset.
 {
     uint8_t byte_off = (offset.to_ulong()) * BYTES_PER_WORD;
-    printf("%d\n", byte_off);
     for (int i = 0; i < BYTES_PER_WORD; i++)
     {
         line[byte_off] = word[i];
