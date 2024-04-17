@@ -58,7 +58,8 @@ constexpr int lg2(int x)
 #define STATE_UNSTABLE lg2(11)             // 4
 #define STATE_NUM 2 //+ STATE_UNSTABLE     // 2 bits for a whole line (Invalid, Valid or Shared);
 #define STATE_WORDS WORDS_PER_LINE         // 1 bit for each word;
-#define STATE_BITS STATE_NUM + STATE_WORDS // no need to separate them;
+// do need to separate them!!!
+// #define STATE_BITS STATE_NUM + STATE_WORDS // no need to separate them;
 // Described in Section III-B:
 // To limit tag and state overhead, allocation occurs at line granularity.
 // For each line, two bits indicate whether the line is Invalid, Valid or Shared.
@@ -97,15 +98,15 @@ constexpr int lg2(int x)
 #define DEV_M 4
 #define DEV_E 5
 
-// // Device Transient states
-// #define DEV_IV 1
-// #define DEV_II 2
-// #define DEV_OI 3
-// #define DEV_AMO 4
-// #define DEV_IV_DCS 5
-// #define DEV_XO 6
-// #define DEV_XOV 7
-// #define DEV_IS 8
+// Device Transient states
+#define DEV_IV 1
+#define DEV_II 2
+#define DEV_OI 3
+#define DEV_AMO 4
+#define DEV_IV_DCS 5
+#define DEV_XO 6
+#define DEV_XOV 7
+#define DEV_IS 8
 
 // /// TU type
 // #define TU_CPU 0

@@ -72,12 +72,12 @@ struct DATA_WORD
 
 struct MSG
 {
-    id_t dest;   // Destination of the request;
+    id_t dest;   // Destination"s" of the request;
     addr_t addr; // Used when it needs data instead of just ownership.
     uint8_t msg;
-    // dev_msg: Read, write or RMW;
-    // tu_msg: Translate device message into LLC message.(Table II)
-    // llc_msg: Fordward message;
+    // dev_req: Read, write or RMW;
+    // tu_req: Translate device message into LLC message.(Table II)
+    // llc_req: Fordward message;
     bool gran;          // 0 for word granularity, 1 for line granularity;
     word_offset_t mask; // Used when it is a line granularity req.
     unstable_state_t u_state;

@@ -32,7 +32,7 @@ public:
     void breakdown(DEV_ADDR &dev_addr, addr_t addr);
     bool fetch_line(DEV_ADDR &dev_addr, DATA_LINE &dev_data);
     void send_rsp(uint8_t msg, uint8_t REQ_id, bool to_REQ, addr_t line_addr, line_t &line);
-    void snd_rsp(MSG &fwd_in);
+    void rcv_fwd(MSG &fwd_in);
     void solve_pending_REQWB();
     void dev_caller_tu();
 };
@@ -79,12 +79,13 @@ public:
     llc_tag_t tag_buf[LLC_ROW];
     sharers_t sharers_buf[LLC_ROW];
 
-    void msg_init();
+    // void msg_init();
     void breakdown(LLC_ADDR &llc_addr, addr_t addr);
     bool fetch_line(LLC_ADDR &llc_addr, DATA_LINE &llc_data);
-    id_t find_owner(DATA_LINE &llc_data);
+    // id_t find_owner(DATA_LINE &llc_data);
+    void rcv_req(id_t &tu_id, MSG &tu_req, int rsp_count, word_offset_t mask, DATA_LINE &llc_data);
     void rcv_req_word(id_t &tu_id, MSG &tu_req, int rsp_count);
-    void rcv_req_line(id_t &tu_id, MSG &tu_req);
+    void rcv_req_line(id_t &tu_id, MSG &tu_req, int rsp_count);
     void snd_req();
     void snd_rsp();
     // void dev_lookup_in_llc(addr_t dev_addr);

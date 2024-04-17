@@ -43,7 +43,7 @@ bool DEV::fetch_line(DEV_ADDR &dev_addr, DATA_LINE &dev_data)
 //     // l2_rsp.nb_put(RSP);
 // }
 
-void DEV::snd_rsp(MSG &fwd_in)
+void DEV::rcv_fwd(MSG &fwd_in)
 {
     TU reqor;
     breakdown(dev_addr, fwd_in.addr);

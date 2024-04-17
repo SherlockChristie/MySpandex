@@ -1,40 +1,40 @@
 #include "classes.hpp"
 #include "bit_utils.hpp"
 
-void LLC::msg_init()
-{
-    for (int i = 0; i < MAX_DEVS; i++)
-    {
-        // if(i==SPX) exit;
-        // else
-        // do not need, since SPX still needs RSP_NULL/REQ_NULL to indicate that this is not used.
+// void LLC::msg_init()
+// {
+//     for (int i = 0; i < MAX_DEVS; i++)
+//     {
+//         // if(i==SPX) exit;
+//         // else
+//         // do not need, since SPX still needs RSP_NULL/REQ_NULL to indicate that this is not used.
 
-        // rsp init;
-        rsp_buf[i].msg = RSP_NULL;
-        LineCopy(rsp_buf[i].data, llc_data.data_line);
+//         // rsp init;
+//         rsp_buf[i].msg = RSP_NULL;
+//         LineCopy(rsp_buf[i].data, llc_data.data_line);
 
-        // req init;
-        rsp_buf[i].msg = REQ_NULL;
-        rsp_buf[i].gran = GRAN_WORD;
-        // rsp_buf[i].addr = REQ.addr;
-    }
-}
+//         // req init;
+//         rsp_buf[i].msg = REQ_NULL;
+//         rsp_buf[i].gran = GRAN_WORD;
+//         // rsp_buf[i].addr = REQ.addr;
+//     }
+// }
 
-void LLC::breakdown(SPX_ADDR &llc_addr, addr_t addr)
+void LLC::breakdown(LLC_ADDR &llc_addr, addr_t addr)
 {
     llc_addr.b_off = BitSub<ADDR_SIZE, BYTES_OFF>(addr, 0);
     llc_addr.w_off = BitSub<ADDR_SIZE, WORDS_OFF>(addr, BYTES_OFF);
-    llc_addr.index = BitSub<ADDR_SIZE, SPX_INDEX_BITS>(addr, WORDS_OFF + BYTES_OFF);
-    llc_addr.tag = BitSub<ADDR_SIZE, SPX_TAG_BITS>(addr, SPX_INDEX_BITS + WORDS_OFF + BYTES_OFF);
+    llc_addr.index = BitSub<ADDR_SIZE, LLC_INDEX_BITS>(addr, WORDS_OFF + BYTES_OFF);
+    llc_addr.tag = BitSub<ADDR_SIZE, LLC_TAG_BITS>(addr, LLC_INDEX_BITS + WORDS_OFF + BYTES_OFF);
 }
 
-bool LLC::fetch_line(SPX_ADDR &llc_addr, DATA_LINE &llc_data)
+bool LLC::fetch_line(LLC_ADDR &llc_addr, DATA_LINE &llc_data)
 {
     line_t zero = {0};
     unsigned long llc_index = (llc_addr.index).to_ulong();
-    data.state = state_buf[llc_index];
+    llc_data.state = state_buf[llc_index];
     llc_data.sharers = sharers_buf[llc_index];
-    if ((tag_buf[llc_index] != llc_addr.tag) || (data.state == SPX_I))
+    if ((tag_buf[llc_index] != llc_addr.tag) || (llc_data.state == LLC_I))
     {
         LineCopy(llc_data.data, zero);
         return 0;
@@ -86,28 +86,27 @@ bool LLC::fetch_line(SPX_ADDR &llc_addr, DATA_LINE &llc_data)
 //     }
 // };
 
-// id_t LLC::find_owner(DATA_LINE &llc_data)
-// {
-//     word_t owner_word;
-//     for (int i = 0; i < WORDS_PER_LINE; i++)
-//     {
-//         if (data.state.test(i))
-//             WordExt(owner_word, i, llc_data.data_line);
-//     }
-//     id_t owner_bits(owner_word);
-//     return owner_bits;
-// }
-
-void LLC::rcv_req_word(id_t &tu_id, MSG &tu_req, int rsp_count)
+void LLC::rcv_req(id_t &tu_id, MSG &tu_req, int rsp_count, word_offset_t mask, DATA_LINE &llc_data)
+// Behaviour when LLC receives an external request from TU (Table III).
 {
     DATA_WORD data;
-    breakdown(llc_addr, tu_req.addr);
-    fetch_line(llc_addr, llc_data);
-    msg_init();
+    WordExt(data, llc_data, mask);
+    // breakdown(llc_addr, tu_req.addr);
+    // fetch_line(llc_addr, llc_data);
+    // msg_init();
+
+    rsp_buf[rsp_count].dest = tu_id;
+    // Default destination: the requestor.
     rsp_buf[rsp_count].addr = tu_req.addr;
     // Default address: the req's addr.
-
-    WordExt(data,llc_data,tu_req.mask);
+    rsp_buf[rsp_count].gran = GRAN_WORD;
+    // Default LLC granularity: word.
+    rsp_buf[rsp_count].mask = mask;
+    // Default mask.
+    rsp_buf[rsp_count].data_line = llc_data;
+    rsp_buf[rsp_count].data_word = data;
+    // Default data.
+    // msg and u_state is decided below.
 
     // if (!llc_data.hit)
     // {
@@ -134,7 +133,7 @@ void LLC::rcv_req_word(id_t &tu_id, MSG &tu_req, int rsp_count)
             // REQS2 not used;
             {
                 llc_data.sharers.set(tu_id.to_ulong()); // Update the sharers list.
-                if (data.state == SPX_S)            // REQS1;
+                if (data.state == SPX_S)                // REQS1;
                 {
                     // no blocking state to S;
                     data.state = SPX_S;
@@ -181,7 +180,7 @@ void LLC::rcv_req_word(id_t &tu_id, MSG &tu_req, int rsp_count)
                 tu_req.u_state = LLC_SV; // go to blocking states;
                 // wait();
                 rsp_buf[rsp_count].msg = FWD_INV;
-                InvSharers(llc_data.sharers,SPX,rsp_buf[rsp_count].dest);
+                InvSharers(llc_data.sharers, SPX, rsp_buf[rsp_count].dest);
             }
             break;
         }
@@ -204,7 +203,7 @@ void LLC::rcv_req_word(id_t &tu_id, MSG &tu_req, int rsp_count)
                 // Pay attetion: Unstable state go to the req triggers it;
                 // wait();
                 rsp_buf[rsp_count].msg = FWD_INV;
-                InvSharers(llc_data.sharers,SPX,rsp_buf[rsp_count].dest);
+                InvSharers(llc_data.sharers, SPX, rsp_buf[rsp_count].dest);
             }
             break;
         }
@@ -227,7 +226,7 @@ void LLC::rcv_req_word(id_t &tu_id, MSG &tu_req, int rsp_count)
                 tu_req.u_state = LLC_SV;
                 // wait();
                 rsp_buf[rsp_count].msg = FWD_INV;
-                InvSharers(llc_data.sharers,SPX,rsp_buf[rsp_count].dest);
+                InvSharers(llc_data.sharers, SPX, rsp_buf[rsp_count].dest);
             }
             break;
         }
@@ -251,7 +250,7 @@ void LLC::rcv_req_word(id_t &tu_id, MSG &tu_req, int rsp_count)
                 tu_req.u_state = LLC_SO;
                 // wait();
                 rsp_buf[rsp_count].msg = FWD_INV;
-                InvSharers(llc_data.sharers,SPX,rsp_buf[rsp_count].dest);
+                InvSharers(llc_data.sharers, SPX, rsp_buf[rsp_count].dest);
             }
             break;
         }
@@ -267,7 +266,7 @@ void LLC::rcv_req_word(id_t &tu_id, MSG &tu_req, int rsp_count)
                 }
                 else
                 {
-                    // invalrsp_count operation for the non-owner to write;
+                    // invalid operation for the non-owner to write;
                     rsp_buf[rsp_count].msg = RSP_NACK;
                 }
             }
@@ -278,25 +277,40 @@ void LLC::rcv_req_word(id_t &tu_id, MSG &tu_req, int rsp_count)
                 tu_req.u_state = LLC_SV;
                 // wait();
                 rsp_buf[rsp_count].msg = FWD_INV;
-                InvSharers(llc_data.sharers,SPX,rsp_buf[rsp_count].dest);
+                InvSharers(llc_data.sharers, SPX, rsp_buf[rsp_count].dest);
             }
             break;
         }
         }
     }
 }
-void LLC::rcv_req_line(id_t &tu_id, MSG &tu_req, int rsp_count)
+
+void LLC::rcv_req_word(id_t &tu_id, MSG &tu_req, int rsp_count)
 // Behaviour when LLC receives an external request from TU (Table III).
 {
-    // unsigned long rsp_count = tu_rsp_count.to_ullong();
     breakdown(llc_addr, tu_req.addr);
     fetch_line(llc_addr, llc_data);
-    msg_init();
-    rsp_buf[rsp_count].addr = tu_req.addr;
-    // Default address: the req's addr.
+    // msg_init();
+
+    // if (tu_req.mask.any())
+    // {
+    //     WordExt(data, llc_data, tu_req.mask);
+    // }
+    // else
+
+    rcv_req(tu_id, tu_req, rsp_count, tu_req.mask, llc_data);
+}
+
+void LLC::rcv_req_line(id_t &tu_id, MSG &tu_req, int rsp_count)
+// LLC is always word granularity; if receive a line granularity request, breakdown into word granularity;
+{
+    breakdown(llc_addr, tu_req.addr);
+    fetch_line(llc_addr, llc_data);
+    // msg_init();
+
     for (int i = 0; i < WORDS_PER_LINE; i++)
     {
-        WordExt();
+        rcv_req(tu_id, tu_req, rsp_count, bitset<WORDS_OFF>(i), llc_data);
     }
 }
 
