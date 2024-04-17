@@ -1,6 +1,6 @@
 #ifndef __CLASSES_HPP__
 #define __CLASSES_HPP__
-
+//TODO: 将部分属性改为private; 用继承优化类的实现;
 #include <cstdint> // For uint8_t, uint32_t etc.
 #include <cmath>
 #include "consts.hpp"
@@ -10,14 +10,14 @@ using namespace std;
 class DEV
 {
 public:
-    id_t id;               // 设备类型;
-    REQ req_buf[MAX_MSG];
+    // id_t id;               // 设备类型;
+    MSG req_buf[MAX_MSG];
     // Wrong comprehension, dismiss the message below.
     // REQ req[MAX_DEVS];
     // // 同一时间内一个设备最多向MAX_DEVS-1(自己)个目标发送请求;
     // // 尽管如此，数组大小也仍应该是MAX_DEVS而非MAX_DEVS-1，因为req[id]中的id对应谁是固定的;
     // // 数组下标代表引起此req的src，req.dest代表此req的目标（总是假定不会同时发送）;
-    RSP rsp_buf[MAX_MSG];
+    MSG rsp_buf[MAX_MSG];
     DEV_ADDR dev_addr;
     DATA_LINE dev_data;
     byte_t cache[DEV_ROW][DEV_COL];
@@ -31,8 +31,8 @@ public:
     void msg_init();
     void breakdown(DEV_ADDR &dev_addr, addr_t addr);
     bool fetch_line(DEV_ADDR &dev_addr, DATA_LINE &dev_data);
-    void send_RSP(uint8_t msg, uint8_t REQ_id, bool to_REQ, addr_t line_addr, line_t &line);
-    void snd_RSP(REQ &fwd_in);
+    void send_rsp(uint8_t msg, uint8_t REQ_id, bool to_REQ, addr_t line_addr, line_t &line);
+    void rcv_fwd(MSG &fwd_in);
     void solve_pending_REQWB();
     void dev_caller_tu();
 };
@@ -50,13 +50,13 @@ public:
 class TU
 {
 public:
-    id_t id;
-    REQ req_buf[MAX_MSG];
-    RSP rsp_buf[MAX_MSG];
+    // id_t id;
+    MSG req_buf[MAX_MSG];
+    MSG rsp_buf[MAX_MSG];
     DATA_LINE tu_data;
 
     void msg_init();
-    void req_mapping(unsigned long id, REQ &req);
+    void req_mapping(unsigned long id, MSG &req);
     void state_mapping(unsigned long id, DATA_LINE &dev_data);
     void mapping_wrapper(DEV &dev);
     void tu_for_gpu();
@@ -68,8 +68,8 @@ public:
 class LLC
 {
 public:
-    REQ req_buf[MAX_MSG];
-    RSP rsp_buf[MAX_MSG];
+    MSG req_buf[MAX_MSG];
+    MSG rsp_buf[MAX_MSG];
     LLC_ADDR llc_addr;
     DATA_LINE llc_data;
     // word_t data_word;
@@ -79,11 +79,13 @@ public:
     llc_tag_t tag_buf[LLC_ROW];
     sharers_t sharers_buf[LLC_ROW];
 
-    void msg_init();
+    // void msg_init();
     void breakdown(LLC_ADDR &llc_addr, addr_t addr);
     bool fetch_line(LLC_ADDR &llc_addr, DATA_LINE &llc_data);
-    id_t find_owner(DATA_LINE &llc_data);
-    void rcv_req(id_t &tu_id, REQ &tu_req);
+    // id_t find_owner(DATA_LINE &llc_data);
+    void rcv_req(id_t &tu_id, MSG &tu_req, int rsp_count, word_offset_t mask, DATA_LINE &llc_data);
+    void rcv_req_word(id_t &tu_id, MSG &tu_req, int rsp_count);
+    void rcv_req_line(id_t &tu_id, MSG &tu_req, int rsp_count);
     void snd_req();
     void snd_rsp();
     // void dev_lookup_in_llc(addr_t dev_addr);
@@ -129,25 +131,16 @@ public:
 //     void fetch_line(LLC &llc, LLC_ADDR &llc_addr);
 // };
 
-class MEM
-{
-public:
-    uint8_t REQ;
-    uint8_t RSP;
-    word_t data_word;
-    line_t data_line;
-    byte_t cache[MEM_ROW][MEM_COL];
-    bool state_buf[MEM_ROW][STATE_BITS];
-    void llc_lookup_in_mem(addr_t *addr, bool &evict);
-};
-
-// class llc_mem_REQ_t
+// class MEM
 // {
 // public:
-//     bool op; /// r, w, r atom., w atom., flush
-//     // hsize_t	hsize;
-//     DATA_LINE_ADDR addr;
+//     uint8_t REQ;
+//     uint8_t RSP;
+//     word_t data_word;
 //     line_t data_line;
+//     byte_t cache[MEM_ROW][MEM_COL];
+//     bool state_buf[MEM_ROW][STATE_BITS];
+//     void llc_lookup_in_mem(addr_t *addr, bool &evict);
 // };
 
 class FIFO {

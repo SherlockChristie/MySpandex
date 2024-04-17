@@ -94,34 +94,37 @@ void TU::req_mapping(unsigned long id, REQ &dev_req)
 void TU::state_mapping(unsigned long id, DATA_LINE &dev_data)
 // Translate device state into LLC state (Section III-D).
 {
+    bitset<STATE_NUM> state_line = BitSub<STATE_BITS, STATE_NUM>(dev_data.state, 0);
+    bitset<STATE_WORDS> state_words = BitSub<STATE_BITS, STATE_WORDS>(dev_data.state, 0);
     switch (id)
     {
     case GPU:
     {
         if (dev_data.state == DEV_I)
-            tu_data.state = LLC_I;
+            state_line = LLC_I;
         else if (dev_data.state == DEV_V)
-            tu_data.state = LLC_V;
+            state_line = LLC_V;
         break;
     }
     case ACC:
     {
         if (dev_data.state == DEV_I)
-            tu_data.state = LLC_I;
+            state_line = LLC_I;
         else if (dev_data.state == DEV_V)
-            tu_data.state = LLC_V;
+            state_line = LLC_V;
         else if (dev_data.state == DEV_O)
-            tu_data.state = LLC_O;
+            state_line = LLC_O;
         break;
     }
     case CPU:
     {
         if (dev_data.state == DEV_I)
-            tu_data.state = LLC_I;
+            state_line = LLC_I;
         else if (dev_data.state == DEV_S)
-            tu_data.state = LLC_S;
+            state_line = LLC_S;
         else if (dev_data.state == DEV_M || dev_data.state == DEV_E)
-            tu_data.state = LLC_O;
+            {state_line = LLC_V;
+            for(int i = 0; i <WORDS_PER_LINE;i++) {state_line}}
         break;
     }
     }
@@ -150,7 +153,7 @@ void TU::tu_for_gpu()
         req_buf[id].msg = REQ_WTdata;
     }
     //  handle partial word granularity responses;
-    if (LineReady(tu_data.state))
+    if (LineReady(state_line))
     {
         tu_callee_dev();
     }
