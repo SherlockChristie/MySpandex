@@ -27,62 +27,22 @@ typedef bitset<ADDR_SIZE> addr_t;
 
 typedef bitset<STATE_DEV> dev_state_t;
 typedef bitset<STATE_BITS> llc_state_t;
-typedef bitset<STATE_NUM> word_state_t;
+// the size of word_state_t should be max(STATE_NUM,STATE_DEV);
+typedef bitset<STATE_DEV> word_state_t;
 typedef bitset<STATE_UNSTABLE> unstable_state_t;
 typedef bitset<DEV_TAG_BITS> dev_tag_t;
 typedef bitset<LLC_TAG_BITS> llc_tag_t;
 typedef bitset<DEV_INDEX_BITS> dev_index_t;
 typedef bitset<LLC_INDEX_BITS> llc_index_t;
+// One-hot for sharers; e.g. 0b0110 indicates that dev_2 and dev_1 shares it;
 typedef bitset<MAX_DEVS> sharers_t;
-// One-hot for sharers; e.g. 0b110 indicates that dev_2 and dev_1 shares it;
-typedef bitset<MAX_DEVS_BITS> id_t;
+// typedef bitset<MAX_DEVS_BITS> id_t;
+// This is a snooping-based protocol, you just broadcast the message;
+typedef sharers_t id_t;
 
 typedef bitset<WORDS_OFF> word_offset_t;
 typedef bitset<BYTES_OFF> byte_offset_t;
 // typedef bitset<10> req_type;
-
-// Does not need DEV_REQ, TU_REQ, LLC_REQ;
-struct REQ
-{
-    id_t dest;   // Destination of the request;
-    addr_t addr; // Used when it needs data instead of just ownership.
-    uint8_t msg;
-    // dev_msg: Read, write or RMW;
-    // tu_msg: Translate device message into LLC message.(Table II)
-    // llc_msg: Fordward message;
-    bool gran;          // 0 for word granularity, 1 for line granularity;
-    word_offset_t mask; // Used when it is a line granularity req.
-    unstable_state_t u_state;
-    // Store the transient states in the req that triggers it instead of the LLC self.
-};
-struct RSP
-{
-    // uint8_t req_id;
-    id_t dest;
-    addr_t addr;
-    // bool to_reqor;
-    uint8_t msg; // Reponse type;
-    bool gran;
-    word_offset_t mask;
-    DATA_LINE data_line;
-    DATA_WORD data_word;
-};
-
-struct DEV_ADDR
-{
-    dev_tag_t tag;
-    dev_index_t index;
-    word_offset_t w_off;
-    byte_offset_t b_off;
-};
-
-struct LLC_ADDR
-{
-    llc_tag_t tag;
-    llc_index_t index;
-    word_offset_t w_off;
-    byte_offset_t b_off;
-};
 
 // Does not need DEV_DATA, TU_DATA, LLC_DATA; just DATA_LINE or DATA_WORD;
 // Data is always the same; it depends on how we explain the address type.
@@ -98,7 +58,6 @@ struct DATA_LINE
 };
 
 struct DATA_WORD
-// not used in MESI;
 {
     // addr_t addr;
     word_t data;
@@ -106,6 +65,68 @@ struct DATA_WORD
     // sharers_t sharers;
     // No, Spandex stores sharers for the whole line;
     // Also do not need owners_t, since if in O, data field itself stores the owner id;
+    // MESI won't use DATA_WORD;
+    // DeNovo do the same with Spandex;
+    // GPU coh. does not have state S or O;
+};
+
+struct MSG
+{
+    id_t dest;   // Destination of the request;
+    addr_t addr; // Used when it needs data instead of just ownership.
+    uint8_t msg;
+    // dev_msg: Read, write or RMW;
+    // tu_msg: Translate device message into LLC message.(Table II)
+    // llc_msg: Fordward message;
+    bool gran;          // 0 for word granularity, 1 for line granularity;
+    word_offset_t mask; // Used when it is a line granularity req.
+    unstable_state_t u_state;
+    // Store the transient states in the req that triggers it instead of the LLC self.
+    DATA_LINE data_line;
+    DATA_WORD data_word;
+};
+
+// Does not need DEV_REQ, TU_REQ, LLC_REQ;
+// struct REQ
+// {
+//     id_t dest;   // Destination of the request;
+//     addr_t addr; // Used when it needs data instead of just ownership.
+//     uint8_t msg;
+//     // dev_msg: Read, write or RMW;
+//     // tu_msg: Translate device message into LLC message.(Table II)
+//     // llc_msg: Fordward message;
+//     bool gran;          // 0 for word granularity, 1 for line granularity;
+//     word_offset_t mask; // Used when it is a line granularity req.
+//     unstable_state_t u_state;
+//     // Store the transient states in the req that triggers it instead of the LLC self.
+// };
+// struct RSP
+// {
+//     // uint8_t req_id;
+//     id_t dest;
+//     addr_t addr;
+//     // bool to_reqor;
+//     uint8_t msg; // Reponse type;
+//     bool gran;
+//     word_offset_t mask;
+//     DATA_LINE data_line;
+//     DATA_WORD data_word;
+// };
+
+struct DEV_ADDR
+{
+    dev_tag_t tag;
+    dev_index_t index;
+    word_offset_t w_off;
+    byte_offset_t b_off;
+};
+
+struct LLC_ADDR
+{
+    llc_tag_t tag;
+    llc_index_t index;
+    word_offset_t w_off;
+    byte_offset_t b_off;
 };
 
 #endif // __BLOCKS_HPP__

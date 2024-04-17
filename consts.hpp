@@ -55,7 +55,8 @@ constexpr int lg2(int x)
 #define LLC_TAG_BITS ADDR_SIZE - LLC_INDEX_BITS - WORDS_OFF - BYTES_OFF // 18
 // 仅后4位有值，高位全为0; 但是保持地址位宽一致;
 
-#define STATE_NUM 2                        // 2 bits for a whole line (Invalid, Valid or Shared);
+#define STATE_UNSTABLE lg2(11)             // 4
+#define STATE_NUM 2 //+ STATE_UNSTABLE     // 2 bits for a whole line (Invalid, Valid or Shared);
 #define STATE_WORDS WORDS_PER_LINE         // 1 bit for each word;
 #define STATE_BITS STATE_NUM + STATE_WORDS // no need to separate them;
 // Described in Section III-B:
@@ -63,7 +64,6 @@ constexpr int lg2(int x)
 // For each line, two bits indicate whether the line is Invalid, Valid or Shared.
 // For each word within the cache line, a single bit tracks whether the word is Owned in a remote cache.
 // For each Owned word, the data field itself stores the ID of the remote owner.
-#define STATE_UNSTABLE lg2(11) // 4
 #define STATE_DEV lg2(6) // 3
 
 #define MAX_DEVS 4                  // 4=3+1; Also considering LLC.
@@ -78,10 +78,10 @@ constexpr int lg2(int x)
 
 /// Device type
 // same with TU's type (but LLC does not have TU)
-#define SPX 0 // LLC (not using LLC because it is already a class name)
-#define CPU 1 // MESI
-#define GPU 2 // GPU coh.
-#define ACC 3 // DeNovo
+#define SPX 1 //0b0001 // LLC (not using LLC because it is already a class name)
+#define CPU 2 //0b0010 // MESI
+#define GPU 4 //0b0100 // GPU coh.
+#define ACC 8 //0b1000 // DeNovo
 
 /// request (DEV to TU)
 #define READ 0   // read
@@ -97,21 +97,15 @@ constexpr int lg2(int x)
 #define DEV_M 4
 #define DEV_E 5
 
-// // Spandex states
-// #define SPX_I 0
-// #define SPX_V 1
-// #define SPX_S 2
-// #define SPX_O 3
-
-// // Spandex Transient states
-// #define SPX_IV 1
-// #define SPX_II 2
-// #define SPX_OI 3
-// #define SPX_AMO 4
-// #define SPX_IV_DCS 5
-// #define SPX_XO 6
-// #define SPX_XOV 7
-// #define SPX_IS 8
+// // Device Transient states
+// #define DEV_IV 1
+// #define DEV_II 2
+// #define DEV_OI 3
+// #define DEV_AMO 4
+// #define DEV_IV_DCS 5
+// #define DEV_XO 6
+// #define DEV_XOV 7
+// #define DEV_IS 8
 
 // /// TU type
 // #define TU_CPU 0
@@ -121,10 +115,15 @@ constexpr int lg2(int x)
 /// LLC states
 #define LLC_I 0
 #define LLC_V 1
-#define LLC_S 2
-// O means the data is Owned within a device cache, not LLC.
-// ???
-#define LLC_O 3
+// #define LLC_O 2
+// no, do not have LLC_O, since O state is for each word, not the whole line.
+#define LLC_S 3
+
+// Word states
+#define SPX_I 0
+#define SPX_V 1
+#define SPX_O 2
+#define SPX_S 3
 
 /// LLC unstable states
 #define LLC_IV 1
