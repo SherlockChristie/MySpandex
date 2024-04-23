@@ -55,11 +55,12 @@ constexpr int lg2(int x)
 #define LLC_TAG_BITS ADDR_SIZE - LLC_INDEX_BITS - WORDS_OFF - BYTES_OFF // 18
 // 仅后4位有值，高位全为0; 但是保持地址位宽一致;
 
+// max(lg2(8),lg2(11)); //dev unstable or llc unstable bigger one;
 #define STATE_UNSTABLE lg2(11)             // 4
-#define STATE_NUM 2 //+ STATE_UNSTABLE     // 2 bits for a whole line (Invalid, Valid or Shared);
+#define STATE_LINE 2 //+ STATE_UNSTABLE     // 2 bits for a whole line (Invalid, Valid or Shared);
 #define STATE_WORDS WORDS_PER_LINE         // 1 bit for each word;
 // do need to separate them!!!
-// #define STATE_BITS STATE_NUM + STATE_WORDS // no need to separate them;
+// #define STATE_BITS STATE_LINE + STATE_WORDS // no need to separate them;
 // Described in Section III-B:
 // To limit tag and state overhead, allocation occurs at line granularity.
 // For each line, two bits indicate whether the line is Invalid, Valid or Shared.

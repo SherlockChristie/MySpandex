@@ -4,7 +4,7 @@
 #include "consts.hpp"
 using namespace std;
 
-id_t find_owner(DATA_LINE &data_line)
+id_t FindOwner(DATA_LINE &data_line)
 {
     DATA_WORD owner_word;
     for (int i = 0; i < WORDS_PER_LINE; i++)
@@ -33,7 +33,7 @@ id_t find_owner(DATA_LINE &data_line)
 int main()
 {
     DATA_LINE tst;
-    llc_state_t states("010100"); // 01_0100; 01:Line in Valid; 0100: Word2 in O
+    spx_line_state_t states("010100"); // 01_0100; 01:Line in Valid; 0100: Word2 in O
     // tst.data[DEV_COL] = {0};
     tst.state = states;
     tst.sharers = {0};
@@ -52,7 +52,7 @@ int main()
     cout << tst.state << endl;
     cout << tst.sharers << endl;
 
-    id_t owner_id = find_owner(tst);
+    id_t owner_id = FindOwner(tst);
     unsigned long id = owner_id.to_ulong();
     printf("%d\n", id);
     return 0;

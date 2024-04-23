@@ -26,8 +26,10 @@ typedef byte_t line_t[BYTES_PER_WORD * WORDS_PER_LINE];
 typedef bitset<ADDR_SIZE> addr_t;
 
 typedef bitset<STATE_DEV> dev_state_t;
-typedef bitset<STATE_BITS> llc_state_t;
-// the size of word_state_t should be max(STATE_NUM,STATE_DEV);
+typedef bitset<STATE_LINE> spx_line_state_t;
+// the size of word_state_t should be max(STATE_LINE,STATE_DEV);
+typedef bitset<STATE_WORDS> spx_word_state_t;
+
 typedef bitset<STATE_DEV> word_state_t;
 typedef bitset<STATE_UNSTABLE> unstable_state_t;
 typedef bitset<DEV_TAG_BITS> dev_tag_t;
@@ -51,9 +53,10 @@ struct DATA_LINE
     // bool hit;
     // word_t data_line[WORDS_PER_LINE]; // word granularity;
     line_t data;
-    llc_state_t state;
-    // GPU and MESI only use state[highest 2 bits];
-    // DeNovo. LLC and TU uses whole state_t;
+    spx_line_state_t line_state;
+    // GPU and MESI only use line_state;
+    // DeNovo. LLC and TU uses whole state_t(line_state & word_state);
+    spx_word_state_t word_state;
     sharers_t sharers;
 };
 

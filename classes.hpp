@@ -7,17 +7,72 @@
 #include "blocks.hpp"
 using namespace std;
 
+class FIFO {
+public:
+    MSG q[MAX_MSG];
+    int front;
+    int rear;
+    int count;
+
+public:
+    FIFO() : front(0), rear(0), count(0) {}
+
+    bool isEmpty() const {
+        return count == 0;
+    }
+
+    bool isFull() const {
+        return count == MAX_MSG;
+    }
+
+    void enqueue(MSG element) {
+        if (isFull()) {
+            throw std::overflow_error("Queue is full");
+        }
+
+        q[rear] = element;
+        rear = (rear + 1) % MAX_MSG;
+        ++count;
+    }
+
+    MSG dequeue() {
+        if (isEmpty()) {
+            throw std::underflow_error("Queue is empty");
+        }
+
+        MSG element = q[front];
+        front = (front + 1) % MAX_MSG;
+        --count;
+        return element;
+    }
+
+    MSG peek() const {
+        if (isEmpty()) {
+            throw std::underflow_error("Queue is empty");
+        }
+        return q[front];
+    }
+
+    // void display() const {
+    //     std::cout << "Queue: ";
+    //     for (int i = 0; i < count; ++i) {
+    //         std::cout << q[(front + i) % MAX_MSG] << " ";
+    //     }
+    //     std::cout << std::endl;
+    // }
+};
+
 class DEV
 {
 public:
     // id_t id;               // 设备类型;
-    MSG req_buf[MAX_MSG];
+    FIFO req_buf;
     // Wrong comprehension, dismiss the message below.
     // REQ req[MAX_DEVS];
     // // 同一时间内一个设备最多向MAX_DEVS-1(自己)个目标发送请求;
     // // 尽管如此，数组大小也仍应该是MAX_DEVS而非MAX_DEVS-1，因为req[id]中的id对应谁是固定的;
     // // 数组下标代表引起此req的src，req.dest代表此req的目标（总是假定不会同时发送）;
-    MSG rsp_buf[MAX_MSG];
+    FIFO rsp_buf;
     DEV_ADDR dev_addr;
     DATA_LINE dev_data;
     byte_t cache[DEV_ROW][DEV_COL];
@@ -51,8 +106,8 @@ class TU
 {
 public:
     // id_t id;
-    MSG req_buf[MAX_MSG];
-    MSG rsp_buf[MAX_MSG];
+    FIFO req_buf;
+    FIFO rsp_buf;
     DATA_LINE tu_data;
 
     void msg_init();
@@ -68,24 +123,25 @@ public:
 class LLC
 {
 public:
-    MSG req_buf[MAX_MSG];
-    MSG rsp_buf[MAX_MSG];
+    FIFO req_buf;
+    FIFO rsp_buf;
     LLC_ADDR llc_addr;
     DATA_LINE llc_data;
     // word_t data_word;
     // line_t data_line;
     byte_t cache[LLC_ROW][LLC_COL];
-    llc_state_t state_buf[LLC_ROW];
+    spx_line_state_t line_state_buf[LLC_ROW];
+    spx_word_state_t word_state_buf[LLC_ROW];
     llc_tag_t tag_buf[LLC_ROW];
     sharers_t sharers_buf[LLC_ROW];
 
     // void msg_init();
     void breakdown(LLC_ADDR &llc_addr, addr_t addr);
     bool fetch_line(LLC_ADDR &llc_addr, DATA_LINE &llc_data);
-    // id_t find_owner(DATA_LINE &llc_data);
-    void rcv_req(id_t &tu_id, MSG &tu_req, int rsp_count, word_offset_t mask, DATA_LINE &llc_data);
-    void rcv_req_word(id_t &tu_id, MSG &tu_req, int rsp_count);
-    void rcv_req_line(id_t &tu_id, MSG &tu_req, int rsp_count);
+    // id_t FindOwner(DATA_LINE &llc_data);
+    MSG rcv_req(id_t &tu_id, MSG &tu_req, word_offset_t mask, DATA_LINE &llc_data);
+    void rcv_req_word(id_t &tu_id, MSG &tu_req);
+    void rcv_req_line(id_t &tu_id, MSG &tu_req);
     void snd_req();
     void snd_rsp();
     // void dev_lookup_in_llc(addr_t dev_addr);
@@ -142,60 +198,5 @@ public:
 //     bool state_buf[MEM_ROW][STATE_BITS];
 //     void llc_lookup_in_mem(addr_t *addr, bool &evict);
 // };
-
-class FIFO {
-private:
-    int arr[MAX_MSG];
-    int front;
-    int rear;
-    int count;
-
-public:
-    FIFO() : front(0), rear(0), count(0) {}
-
-    bool isEmpty() const {
-        return count == 0;
-    }
-
-    bool isFull() const {
-        return count == MAX_MSG;
-    }
-
-    void enqueue(int element) {
-        if (isFull()) {
-            throw std::overflow_error("Queue is full");
-        }
-
-        arr[rear] = element;
-        rear = (rear + 1) % MAX_MSG;
-        ++count;
-    }
-
-    int dequeue() {
-        if (isEmpty()) {
-            throw std::underflow_error("Queue is empty");
-        }
-
-        int element = arr[front];
-        front = (front + 1) % MAX_MSG;
-        --count;
-        return element;
-    }
-
-    int peek() const {
-        if (isEmpty()) {
-            throw std::underflow_error("Queue is empty");
-        }
-        return arr[front];
-    }
-
-    // void display() const {
-    //     std::cout << "Queue: ";
-    //     for (int i = 0; i < count; ++i) {
-    //         std::cout << arr[(front + i) % MAX_MSG] << " ";
-    //     }
-    //     std::cout << std::endl;
-    // }
-};
 
 #endif // __CLASSES_HPP__

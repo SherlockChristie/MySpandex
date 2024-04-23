@@ -32,9 +32,10 @@ bool LLC::fetch_line(LLC_ADDR &llc_addr, DATA_LINE &llc_data)
 {
     line_t zero = {0};
     unsigned long llc_index = (llc_addr.index).to_ulong();
-    llc_data.state = state_buf[llc_index];
+    llc_data.line_state = line_state_buf[llc_index];
+    llc_data.word_state = word_state_buf[llc_index];
     llc_data.sharers = sharers_buf[llc_index];
-    if ((tag_buf[llc_index] != llc_addr.tag) || (llc_data.state == LLC_I))
+    if ((tag_buf[llc_index] != llc_addr.tag)) //|| (llc_data.line_state == LLC_I))
     {
         LineCopy(llc_data.data, zero);
         return 0;
@@ -86,25 +87,26 @@ bool LLC::fetch_line(LLC_ADDR &llc_addr, DATA_LINE &llc_data)
 //     }
 // };
 
-void LLC::rcv_req(id_t &tu_id, MSG &tu_req, int rsp_count, word_offset_t mask, DATA_LINE &llc_data)
+MSG LLC::rcv_req(id_t &tu_id, MSG &tu_req, word_offset_t mask, DATA_LINE &llc_data)
 // Behaviour when LLC receives an external request from TU (Table III).
 {
+    MSG gen;
     DATA_WORD data;
     WordExt(data, llc_data, mask);
     // breakdown(llc_addr, tu_req.addr);
     // fetch_line(llc_addr, llc_data);
     // msg_init();
 
-    rsp_buf[rsp_count].dest = tu_id;
+    gen.dest = tu_id;
     // Default destination: the requestor.
-    rsp_buf[rsp_count].addr = tu_req.addr;
+    gen.addr = tu_req.addr;
     // Default address: the req's addr.
-    rsp_buf[rsp_count].gran = GRAN_WORD;
+    gen.gran = GRAN_WORD;
     // Default LLC granularity: word.
-    rsp_buf[rsp_count].mask = mask;
+    gen.mask = mask;
     // Default mask.
-    rsp_buf[rsp_count].data_line = llc_data;
-    rsp_buf[rsp_count].data_word = data;
+    gen.data_line = llc_data;
+    gen.data_word = data;
     // Default data.
     // msg and u_state is decided below.
 
@@ -118,14 +120,21 @@ void LLC::rcv_req(id_t &tu_id, MSG &tu_req, int rsp_count, word_offset_t mask, D
         {
         case REQ_V:
         {
+            // do not consider this; just miss and go to main memory;
+            // but how about write ops?
+            // if (data.state == SPX_I)
+            // {
+            //     // invalid operation for ReqV I state;
+            //     gen.msg = RSP_NACK;
+            // }
             if (data.state == SPX_V || data.state == SPX_S)
             {
-                rsp_buf[rsp_count].msg = RSP_V;
+                gen.msg = RSP_V;
             }
             else if (data.state == SPX_O)
             {
-                rsp_buf[rsp_count].msg = FWD_REQ_V;
-                rsp_buf[rsp_count].dest = find_owner(llc_data);
+                gen.msg = FWD_REQ_V;
+                gen.dest = FindOwner(llc_data);
             };
             break;
         }
@@ -137,28 +146,29 @@ void LLC::rcv_req(id_t &tu_id, MSG &tu_req, int rsp_count, word_offset_t mask, D
                 {
                     // no blocking state to S;
                     data.state = SPX_S;
-                    rsp_buf[rsp_count].msg = RSP_S;
+                    gen.msg = RSP_S;
                 }
                 else if (data.state == SPX_O)
                 {
-                    rsp_buf[rsp_count].dest = find_owner(llc_data);
-                    if (rsp_buf[rsp_count].dest == CPU) // REQS1;
+                    gen.dest = FindOwner(llc_data);
+                    if (gen.dest == CPU) // REQS1;
                     {
-                        // having blocking states;
+                        // go to blocking states;
                         tu_req.u_state = LLC_OS;
-                        rsp_buf[rsp_count].msg = FWD_REQ_S;
+                        // Pay attetion: Unstable state go to the req triggers it!!!!!!!!!!!!!!!
+                        gen.msg = FWD_REQ_S;
                     }
                     else // REQS3;
                     {
                         data.state = SPX_O;
-                        rsp_buf[rsp_count].msg = FWD_REQ_Odata;
+                        gen.msg = FWD_REQ_Odata;
                     }
                 }
                 // REQS3;
                 else if (data.state == SPX_V)
                 {
                     data.state = SPX_O;
-                    rsp_buf[rsp_count].msg = RSP_S;
+                    gen.msg = RSP_S;
                 }
                 break;
             }
@@ -166,21 +176,21 @@ void LLC::rcv_req(id_t &tu_id, MSG &tu_req, int rsp_count, word_offset_t mask, D
         {
             if (data.state == SPX_O)
             {
-                rsp_buf[rsp_count].msg = FWD_REQ_O;
-                rsp_buf[rsp_count].dest = find_owner(llc_data);
-                data.state = SPX_V;
-            }
-            else if (data.state == SPX_V)
-            {
-                rsp_buf[rsp_count].msg = RSP_WT;
+                gen.msg = FWD_REQ_O;
+                gen.dest = FindOwner(llc_data);
                 data.state = SPX_V;
             }
             else if (data.state == SPX_S)
             {
                 tu_req.u_state = LLC_SV; // go to blocking states;
                 // wait();
-                rsp_buf[rsp_count].msg = FWD_INV;
-                InvSharers(llc_data.sharers, SPX, rsp_buf[rsp_count].dest);
+                gen.msg = FWD_INV;
+                gen.dest = InvSharers(llc_data.sharers, SPX);
+            }
+            else if (data.state == SPX_V || data.state == SPX_I)
+            {
+                gen.msg = RSP_WT;
+                data.state = SPX_V;
             }
             break;
         }
@@ -188,22 +198,22 @@ void LLC::rcv_req(id_t &tu_id, MSG &tu_req, int rsp_count, word_offset_t mask, D
         {
             if (data.state == SPX_O)
             {
-                rsp_buf[rsp_count].msg = FWD_REQ_O;
-                rsp_buf[rsp_count].dest = find_owner(llc_data);
+                gen.msg = FWD_REQ_O;
+                gen.dest = FindOwner(llc_data);
                 // data.state = SPX_O;
             }
-            else if (data.state == SPX_V)
-            {
-                rsp_buf[rsp_count].msg = RSP_O;
-                data.state = SPX_O;
-            }
+
             else if (data.state == SPX_S)
             {
                 tu_req.u_state = LLC_SO; // go to blocking states;
-                // Pay attetion: Unstable state go to the req triggers it;
                 // wait();
-                rsp_buf[rsp_count].msg = FWD_INV;
-                InvSharers(llc_data.sharers, SPX, rsp_buf[rsp_count].dest);
+                gen.msg = FWD_INV;
+                gen.dest = InvSharers(llc_data.sharers, SPX);
+            }
+            else if (data.state == SPX_V || data.state == SPX_I)
+            {
+                gen.msg = RSP_O;
+                data.state = SPX_O;
             }
             break;
         }
@@ -211,22 +221,22 @@ void LLC::rcv_req(id_t &tu_id, MSG &tu_req, int rsp_count, word_offset_t mask, D
         {
             if (data.state == SPX_O)
             {
-                rsp_buf[rsp_count].msg = FWD_RVK_O;
-                rsp_buf[rsp_count].dest = find_owner(llc_data);
-                // having blocking states;
+                gen.msg = FWD_RVK_O;
+                gen.dest = FindOwner(llc_data);
+                // go to blocking states;
                 tu_req.u_state = LLC_OV;
             }
             else if (data.state == SPX_V)
             {
-                rsp_buf[rsp_count].msg = RSP_WTdata;
+                gen.msg = RSP_WTdata;
             }
             else if (data.state == SPX_S)
             {
-                // having blocking states;
+                // go to blocking states;
                 tu_req.u_state = LLC_SV;
                 // wait();
-                rsp_buf[rsp_count].msg = FWD_INV;
-                InvSharers(llc_data.sharers, SPX, rsp_buf[rsp_count].dest);
+                gen.msg = FWD_INV;
+                gen.dest = InvSharers(llc_data.sharers, SPX);
             }
             break;
         }
@@ -234,23 +244,23 @@ void LLC::rcv_req(id_t &tu_id, MSG &tu_req, int rsp_count, word_offset_t mask, D
         {
             if (data.state == SPX_O)
             {
-                rsp_buf[rsp_count].msg = FWD_REQ_Odata;
-                rsp_buf[rsp_count].dest = find_owner(llc_data);
+                gen.msg = FWD_REQ_Odata;
+                gen.dest = FindOwner(llc_data);
                 // data.state == SPX_O; // no blocking states;
             }
             else if (data.state == SPX_V)
             {
                 // no blocking states;
-                data.state == SPX_O;
-                rsp_buf[rsp_count].msg = RSP_Odata;
+                data.state = SPX_O;
+                gen.msg = RSP_Odata;
             }
             else if (data.state == SPX_S)
             {
-                // having blocking states;
+                // go to blocking states;
                 tu_req.u_state = LLC_SO;
                 // wait();
-                rsp_buf[rsp_count].msg = FWD_INV;
-                InvSharers(llc_data.sharers, SPX, rsp_buf[rsp_count].dest);
+                gen.msg = FWD_INV;
+                gen.dest = InvSharers(llc_data.sharers, SPX);
             }
             break;
         }
@@ -258,34 +268,38 @@ void LLC::rcv_req(id_t &tu_id, MSG &tu_req, int rsp_count, word_offset_t mask, D
         {
             if (data.state == SPX_O)
             {
-                rsp_buf[rsp_count].dest = find_owner(llc_data);
-                if (tu_id == rsp_buf[rsp_count].dest)
+                gen.dest = FindOwner(llc_data);
+                if (tu_id == gen.dest)
                 {
                     data.state == SPX_V;
-                    rsp_buf[rsp_count].msg = RSP_WB_ACK;
+                    gen.msg = RSP_WB_ACK;
                 }
                 else
                 {
                     // invalid operation for the non-owner to write;
-                    rsp_buf[rsp_count].msg = RSP_NACK;
+                    gen.msg = RSP_NACK;
                 }
             }
             // is that possible for a REQ_WB in SPX_S???
             else if (data.state == SPX_S)
             {
-                // having blocking states;
+                // go to blocking states;
                 tu_req.u_state = LLC_SV;
                 // wait();
-                rsp_buf[rsp_count].msg = FWD_INV;
-                InvSharers(llc_data.sharers, SPX, rsp_buf[rsp_count].dest);
+                gen.msg = FWD_INV;
+                gen.dest = InvSharers(llc_data.sharers, SPX);
             }
             break;
         }
         }
     }
+
+    WordIns(data, llc_data, mask);
+    // Save changed word data state back;
+    return gen;
 }
 
-void LLC::rcv_req_word(id_t &tu_id, MSG &tu_req, int rsp_count)
+void LLC::rcv_req_word(id_t &tu_id, MSG &tu_req)
 // Behaviour when LLC receives an external request from TU (Table III).
 {
     breakdown(llc_addr, tu_req.addr);
@@ -298,20 +312,31 @@ void LLC::rcv_req_word(id_t &tu_id, MSG &tu_req, int rsp_count)
     // }
     // else
 
-    rcv_req(tu_id, tu_req, rsp_count, tu_req.mask, llc_data);
+    rsp_buf.enqueue(rcv_req(tu_id, tu_req, tu_req.mask, llc_data));
 }
 
-void LLC::rcv_req_line(id_t &tu_id, MSG &tu_req, int rsp_count)
+void LLC::rcv_req_line(id_t &tu_id, MSG &tu_req)
 // LLC is always word granularity; if receive a line granularity request, breakdown into word granularity;
 {
     breakdown(llc_addr, tu_req.addr);
     fetch_line(llc_addr, llc_data);
     // msg_init();
 
+    // if (llc_data.word_state.any())
+    // // if any word in O, rsp may be different for each word;
+    // {
     for (int i = 0; i < WORDS_PER_LINE; i++)
     {
-        rcv_req(tu_id, tu_req, rsp_count, bitset<WORDS_OFF>(i), llc_data);
+        rsp_buf.enqueue(rcv_req(tu_id, tu_req, bitset<WORDS_OFF>(i), llc_data));
     }
+    //}
+    // else // the whole line only have 1 rsp;
+    // {
+    //     MSG gen_line;
+    //     gen_line = rcv_req(tu_id, tu_req, 0, llc_data);
+    //     gen_line.gran = GRAN_LINE;
+    //     llc_data.line_state =
+    // }
 }
 
 void LLC::snd_req() {}

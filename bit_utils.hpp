@@ -37,10 +37,10 @@ void LineCopy(line_t &dest, const line_t &src)
     std::memcpy(dest, src, sizeof(line_t));
 }
 
-bool LineReady(llc_state_t &state)
+bool LineReady(spx_line_state_t &state)
 // For TU to decide whether the whole line is ready or not. (line_state is valid, and no word is in Owned.)
 {
-    std::bitset<STATE_NUM> state_line = BitSub<STATE_BITS, STATE_NUM>(state, STATE_WORDS);
+    std::bitset<STATE_LINE> state_line = BitSub<STATE_BITS, STATE_LINE>(state, STATE_WORDS);
     std::bitset<STATE_WORDS> state_words = BitSub<STATE_BITS, STATE_WORDS>(state, 0);
 
     if ((state_line == LLC_V) && (state_words.none()))
@@ -139,21 +139,21 @@ void WordExt(DATA_WORD &word, DATA_LINE &line, word_offset_t &offset)
         word.state = SPX_O;
     else
     {
-        std::bitset<STATE_NUM> temp = BitSub<STATE_BITS, STATE_NUM>(line.state, STATE_WORDS);
-        std::bitset<STATE_DEV - STATE_NUM> zero(0);
+        std::bitset<STATE_LINE> temp = BitSub<STATE_BITS, STATE_LINE>(line.state, STATE_WORDS);
+        std::bitset<STATE_DEV - STATE_LINE> zero(0);
         word.state = BitCat(zero, temp);
     }
 }
 
-id_t find_owner(DATA_LINE &data_line)
+id_t FindOwner(DATA_LINE &data)
 {
     DATA_WORD owner_word;
     for (int i = 0; i < WORDS_PER_LINE; i++)
     {
-        if (data_line.state.test(i))
+        if (data.word_state.test(i))
         {
             std::bitset<WORDS_OFF> off(i);
-            WordExt(owner_word, data_line, off);
+            WordExt(owner_word, data, off);
             break; // not worried about multiple owners since it is exclusive.
         }
     }
@@ -163,9 +163,10 @@ id_t find_owner(DATA_LINE &data_line)
     return owner_bits;
 }
 
-id_t InvSharers(sharers_t sharers, id_t self, id_t dest)
+id_t InvSharers(sharers_t sharers, id_t self)
 // Invalidate sharers for a downgrade from state S.
 {
+    id_t dest;
     dest = sharers;
     dest &= (~self); 
     // Send message to all sharers except itself.

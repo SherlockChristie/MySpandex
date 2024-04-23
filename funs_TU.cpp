@@ -94,7 +94,7 @@ void TU::req_mapping(unsigned long id, REQ &dev_req)
 void TU::state_mapping(unsigned long id, DATA_LINE &dev_data)
 // Translate device state into LLC state (Section III-D).
 {
-    bitset<STATE_NUM> state_line = BitSub<STATE_BITS, STATE_NUM>(dev_data.state, 0);
+    bitset<STATE_LINE> state_line = BitSub<STATE_BITS, STATE_LINE>(dev_data.state, 0);
     bitset<STATE_WORDS> state_words = BitSub<STATE_BITS, STATE_WORDS>(dev_data.state, 0);
     switch (id)
     {
