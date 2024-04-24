@@ -8,18 +8,4 @@
 // 3. Send msg to the client's fifo;
 // 4. the receiver generates message in its own fifo.
 
-void snd_msg(FIFO &a, FIFO &b)
-{
-    while (!a.isEmpty())
-    {
-        MSG msg = a.peek();
-        for (int i = 0; i < MAX_DEVS; i++)
-        {
-            if (msg.dest.test(i))
-            {
-                b.enqueue(msg);
-                a.dequeue();
-            }
-        }
-    }
-}
+// It's a fuxking bus-based system, I should send msg to the BUS first instead of point-to-point.

@@ -87,23 +87,24 @@ bool LLC::fetch_line(LLC_ADDR &llc_addr, DATA_LINE &llc_data)
 //     }
 // };
 
-MSG LLC::rcv_req(id_t &tu_id, MSG &tu_req, word_offset_t mask, DATA_LINE &llc_data)
+void LLC::rcv_req(id_t &tu_id, MSG &tu_req, word_offset_t offset, DATA_LINE &llc_data)
 // Behaviour when LLC receives an external request from TU (Table III).
 {
     MSG gen;
     DATA_WORD data;
-    WordExt(data, llc_data, mask);
+    WordExt(data, llc_data, offset);
     // breakdown(llc_addr, tu_req.addr);
     // fetch_line(llc_addr, llc_data);
     // msg_init();
 
     gen.dest = tu_id;
     // Default destination: the requestor.
+    // gen.mask.set(offset.to_ulong());
     gen.addr = tu_req.addr;
     // Default address: the req's addr.
     gen.gran = GRAN_WORD;
     // Default LLC granularity: word.
-    gen.mask = mask;
+    gen.offset = offset;
     // Default mask.
     gen.data_line = llc_data;
     gen.data_word = data;
@@ -294,9 +295,9 @@ MSG LLC::rcv_req(id_t &tu_id, MSG &tu_req, word_offset_t mask, DATA_LINE &llc_da
         }
     }
 
-    WordIns(data, llc_data, mask);
+    WordIns(data, llc_data, offset);
     // Save changed word data state back;
-    return gen;
+    rsp_buf.push_back(gen);
 }
 
 void LLC::rcv_req_word(id_t &tu_id, MSG &tu_req)
@@ -311,8 +312,7 @@ void LLC::rcv_req_word(id_t &tu_id, MSG &tu_req)
     //     WordExt(data, llc_data, tu_req.mask);
     // }
     // else
-
-    rsp_buf.enqueue(rcv_req(tu_id, tu_req, tu_req.mask, llc_data));
+    rcv_req(tu_id, tu_req, tu_req.offset, llc_data);
 }
 
 void LLC::rcv_req_line(id_t &tu_id, MSG &tu_req)
@@ -327,7 +327,8 @@ void LLC::rcv_req_line(id_t &tu_id, MSG &tu_req)
     // {
     for (int i = 0; i < WORDS_PER_LINE; i++)
     {
-        rsp_buf.enqueue(rcv_req(tu_id, tu_req, bitset<WORDS_OFF>(i), llc_data));
+        rcv_req(tu_id, tu_req, bitset<WORDS_OFF>(i), llc_data);
+        // rsp_buf.push_back(rcv_req(tu_id, tu_req, bitset<WORDS_OFF>(i), llc_data));
     }
     //}
     // else // the whole line only have 1 rsp;
@@ -339,6 +340,40 @@ void LLC::rcv_req_line(id_t &tu_id, MSG &tu_req)
     // }
 }
 
-void LLC::snd_req() {}
+void LLC::rcv_rsp(MSG &rsp_in, word_offset_t offset, DATA_LINE &llc_data)
+{
+    breakdown(llc_addr, rsp_in.addr);
+    fetch_line(llc_addr, llc_data);
 
-void LLC::snd_rsp() {}
+    DATA_WORD data;
+    WordExt(data, llc_data, offset);
+
+    switch (rsp_in.msg)
+    {
+    case RSP_V:
+    {
+        data.state = SPX_V;
+        break;
+    }
+    case RSP_V:
+    {
+        data.state = SPX_O;
+        break;
+    }
+    case RSP_V:
+    {
+        data.state = SPX_O;
+        break;
+    }
+    case RSP_V:
+    {
+        data.state = SPX_O;
+        break;
+    }
+    case RSP_V:
+    {
+        data.state = SPX_O;
+        break;
+    }
+    }
+}

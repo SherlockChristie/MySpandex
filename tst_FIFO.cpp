@@ -20,7 +20,7 @@ public:
         return count == MAX_NUM;
     }
 
-    void enqueue(int element) {
+    void envector(int element) {
         if (isFull()) {
             throw std::overflow_error("Queue is full");
         }
@@ -30,7 +30,7 @@ public:
         ++count;
     }
 
-    int dequeue() {
+    int devector() {
         if (isEmpty()) {
             throw std::underflow_error("Queue is empty");
         }
@@ -61,19 +61,19 @@ int main() {
     FIFOQueue q;
 
     try {
-        q.enqueue(1);
-        q.enqueue(2);
-        q.enqueue(3);
-        q.enqueue(4);
-        q.enqueue(5);
-        q.enqueue(6);
-        q.enqueue(7);
-        q.enqueue(8);
+        q.envector(1);
+        q.envector(2);
+        q.envector(3);
+        q.envector(4);
+        q.envector(5);
+        q.envector(6);
+        q.envector(7);
+        q.envector(8);
         q.display();
 
-        std::cout << "Dequeued: " << q.dequeue() << std::endl;
+        std::cout << "Devectord: " << q.devector() << std::endl;
         q.display();
-        q.enqueue(9);
+        q.envector(9);
         q.display();
 
         std::cout << "Peek: " << q.peek() << std::endl;

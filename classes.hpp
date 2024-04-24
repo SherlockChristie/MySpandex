@@ -3,76 +3,78 @@
 //TODO: 将部分属性改为private; 用继承优化类的实现;
 #include <cstdint> // For uint8_t, uint32_t etc.
 #include <cmath>
+#include <vector>
 #include "consts.hpp"
 #include "blocks.hpp"
 using namespace std;
 
-class FIFO {
-public:
-    MSG q[MAX_MSG];
-    int front;
-    int rear;
-    int count;
+// Why not just using #include <vector> instead of creating a FIFO by yourself...
+// class FIFO {
+// public:
+//     MSG q[MAX_MSG];
+//     int front;
+//     int rear;
+//     int count;
 
-public:
-    FIFO() : front(0), rear(0), count(0) {}
+// public:
+//     FIFO() : front(0), rear(0), count(0) {}
 
-    bool isEmpty() const {
-        return count == 0;
-    }
+//     bool isEmpty() const {
+//         return count == 0;
+//     }
 
-    bool isFull() const {
-        return count == MAX_MSG;
-    }
+//     bool isFull() const {
+//         return count == MAX_MSG;
+//     }
 
-    void enqueue(MSG element) {
-        if (isFull()) {
-            throw std::overflow_error("Queue is full");
-        }
+//     void envector(MSG element) {
+//         if (isFull()) {
+//             // throw std::overflow_error("Queue is full");
+//         }
 
-        q[rear] = element;
-        rear = (rear + 1) % MAX_MSG;
-        ++count;
-    }
+//         q[rear] = element;
+//         rear = (rear + 1) % MAX_MSG;
+//         ++count;
+//     }
 
-    MSG dequeue() {
-        if (isEmpty()) {
-            throw std::underflow_error("Queue is empty");
-        }
+//     MSG devector() {
+//         if (isEmpty()) {
+//             // throw std::underflow_error("Queue is empty");
+//         }
 
-        MSG element = q[front];
-        front = (front + 1) % MAX_MSG;
-        --count;
-        return element;
-    }
+//         MSG element = q[front];
+//         front = (front + 1) % MAX_MSG;
+//         --count;
+//         return element;
+//     }
 
-    MSG peek() const {
-        if (isEmpty()) {
-            throw std::underflow_error("Queue is empty");
-        }
-        return q[front];
-    }
+//     MSG peek() const {
+//         if (isEmpty()) {
+//             // throw std::underflow_error("Queue is empty");
+//         }
+//         return q[front];
+//     }
 
-    // void display() const {
-    //     std::cout << "Queue: ";
-    //     for (int i = 0; i < count; ++i) {
-    //         std::cout << q[(front + i) % MAX_MSG] << " ";
-    //     }
-    //     std::cout << std::endl;
-    // }
-};
+//     // void display() const {
+//     //     std::cout << "Queue: ";
+//     //     for (int i = 0; i < count; ++i) {
+//     //         std::cout << q[(front + i) % MAX_MSG] << " ";
+//     //     }
+//     //     std::cout << std::endl;
+//     // }
+// };
 
 class DEV
 {
 public:
     // id_t id;               // 设备类型;
-    FIFO req_buf;
+    std::vector<MSG> req_buf;
     // Wrong comprehension, dismiss the message below.
     // REQ req[MAX_DEVS];
     // // 同一时间内一个设备最多向MAX_DEVS-1(自己)个目标发送请求;
     // // 尽管如此，数组大小也仍应该是MAX_DEVS而非MAX_DEVS-1，因为req[id]中的id对应谁是固定的;
     // // 数组下标代表引起此req的src，req.dest代表此req的目标（总是假定不会同时发送）;
-    FIFO rsp_buf;
+    std::vector<MSG> rsp_buf;
     DEV_ADDR dev_addr;
     DATA_LINE dev_data;
     byte_t cache[DEV_ROW][DEV_COL];
@@ -106,8 +108,8 @@ class TU
 {
 public:
     // id_t id;
-    FIFO req_buf;
-    FIFO rsp_buf;
+    std::vector<MSG> req_buf;
+    std::vector<MSG> rsp_buf;
     DATA_LINE tu_data;
 
     void msg_init();
@@ -123,8 +125,8 @@ public:
 class LLC
 {
 public:
-    FIFO req_buf;
-    FIFO rsp_buf;
+    std::vector<MSG> req_buf;
+    std::vector<MSG> rsp_buf;
     LLC_ADDR llc_addr;
     DATA_LINE llc_data;
     // word_t data_word;

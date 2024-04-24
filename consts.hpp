@@ -140,8 +140,8 @@ constexpr int lg2(int x)
 #define LLC_SI 10
 #define LLC_WB 11
 
-/// REQuest (TU to LLC)
-#define REQ_NULL 0 // not used REQ.
+/// Request (TU to LLC)
+// #define REQ_NULL 0 // not used REQ.
 #define REQ_S 1
 #define REQ_Odata 2
 #define REQ_WT 3
@@ -152,26 +152,26 @@ constexpr int lg2(int x)
 #define REQ_WTfwd 8
 
 /// Forward (LLC to DEV/TU)
-#define FWD_REQ_S 0     /// same as fwd_gets
-#define FWD_REQ_Odata 1 /// same as fwd_getm
-#define FWD_INV 2       /// same as fwd_inv
-#define FWD_WB_ACK 3    /// same as fwd_putack
-#define FWD_RVK_O 4     /// same as getm_llc
-#define FWD_REQ_V 7     /// non existent in ESP
-#define FWD_REQ_O 6
-#define FWD_WTfwd 5
+#define FWD_REQ_S 9     /// same as fwd_gets
+#define FWD_REQ_Odata 10 /// same as fwd_getm
+#define FWD_INV 11       /// same as fwd_inv
+#define FWD_WB_ACK 12    /// same as fwd_putack
+#define FWD_RVK_O 13     /// same as getm_llc
+#define FWD_REQ_V 14     /// non existent in ESP
+#define FWD_REQ_O 15
+#define FWD_WTfwd 16
 
 /// Response (DEV/TU to DEV/TU, DEV/TU to LLC, LLC to DEV/TU)
-#define RSP_NULL 0 // not used RSP.
-#define RSP_S 1
-#define RSP_Odata 2   /// same as FWD_REQ_odata
-#define RSP_INV_ACK 3 /// same as fwd_inv_spdx
-#define RSP_NACK 4
-#define RSP_RVK_O 5 /// same as fwd_rvk_o
-#define RSP_V 6
-#define RSP_O 7 /// same as FWD_REQ_o
-#define RSP_WT 8
-#define RSP_WTdata 9
-#define RSP_WB_ACK 10
+// #define RSP_NULL 0 // not used RSP.
+#define RSP_S 17
+#define RSP_Odata 18   /// same as FWD_REQ_odata
+#define RSP_INV_ACK 19 /// same as fwd_inv_spdx
+#define RSP_NACK 20
+#define RSP_RVK_O 21 /// same as fwd_rvk_o
+#define RSP_V 22
+#define RSP_O 23 /// same as FWD_REQ_o
+#define RSP_WT 24
+#define RSP_WTdata 25
+#define RSP_WB_ACK 26
 
 #endif // __CONSTS_HPP__

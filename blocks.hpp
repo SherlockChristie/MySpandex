@@ -42,6 +42,7 @@ typedef bitset<MAX_DEVS> sharers_t;
 // This is a snooping-based protocol, you just broadcast the message;
 typedef sharers_t id_t;
 
+typedef bitset<WORDS_PER_LINE> mask_t;
 typedef bitset<WORDS_OFF> word_offset_t;
 typedef bitset<BYTES_OFF> byte_offset_t;
 // typedef bitset<10> req_type;
@@ -75,6 +76,9 @@ struct DATA_WORD
 
 struct MSG
 {
+    uint8_t id; // Every req/fwd has an unique id, rsp has an id same with its corrsponding rsp/fwd.
+    // LSB 00:line/word0?
+    mask_t mask;// if all the line is ready;
     id_t dest;   // Destination"s" of the request;
     addr_t addr; // Used when it needs data instead of just ownership.
     uint8_t msg;
@@ -82,7 +86,7 @@ struct MSG
     // tu_req: Translate device message into LLC message.(Table II)
     // llc_req: Fordward message;
     bool gran;          // 0 for word granularity, 1 for line granularity;
-    word_offset_t mask; // Used when it is a line granularity req.
+    word_offset_t offset; // Used when it is a line granularity req.
     unstable_state_t u_state;
     // Store the transient states in the req that triggers it instead of the LLC self.
     DATA_LINE data_line;
