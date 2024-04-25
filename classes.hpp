@@ -67,7 +67,7 @@ using namespace std;
 class DEV
 {
 public:
-    // id_t id;               // 设备类型;
+    id_num_t dev_id;               // 设备类型;
     std::vector<MSG> req_buf;
     // Wrong comprehension, dismiss the message below.
     // REQ req[MAX_DEVS];
@@ -76,14 +76,15 @@ public:
     // // 数组下标代表引起此req的src，req.dest代表此req的目标（总是假定不会同时发送）;
     std::vector<MSG> rsp_buf;
     DEV_ADDR dev_addr;
-    DATA_LINE dev_data;
+    DATA_LINE dev_line;
+    DATA_WORD dev_word;
     byte_t cache[DEV_ROW][DEV_COL];
     // 内存是按字节寻址的，故此处用byte_t; 但数据传输的最小单元是字，故下文用word_t;
     // word_t data_word;
     // line_t data_line;
     dev_state_t state_buf[DEV_ROW];
     dev_tag_t tag_buf[DEV_ROW];
-    sharers_t sharers_buf[DEV_ROW];
+    id_bit_t sharers_buf[DEV_ROW];
 
     void msg_init();
     void breakdown(DEV_ADDR &dev_addr, addr_t addr);
@@ -107,15 +108,17 @@ public:
 class TU
 {
 public:
-    // id_t id;
+    id_num_t tu_id;
     std::vector<MSG> req_buf;
     std::vector<MSG> rsp_buf;
-    DATA_LINE tu_data;
+    DATA_LINE tu_line;
+    DATA_WORD tu_word;
 
     void msg_init();
     void req_mapping(unsigned long id, MSG &req);
     void state_mapping(unsigned long id, DATA_LINE &dev_data);
     void mapping_wrapper(DEV &dev);
+    void rcv_fwd();
     void tu_for_gpu();
     void tu_for_acc();
     void tu_for_cpu(TU &sender);
@@ -128,22 +131,25 @@ public:
     std::vector<MSG> req_buf;
     std::vector<MSG> rsp_buf;
     LLC_ADDR llc_addr;
-    DATA_LINE llc_data;
+    DATA_LINE llc_line;
+    DATA_WORD llc_word;
     // word_t data_word;
     // line_t data_line;
     byte_t cache[LLC_ROW][LLC_COL];
     spx_line_state_t line_state_buf[LLC_ROW];
     spx_word_state_t word_state_buf[LLC_ROW];
     llc_tag_t tag_buf[LLC_ROW];
-    sharers_t sharers_buf[LLC_ROW];
+    id_bit_t sharers_buf[LLC_ROW];
 
     // void msg_init();
     void breakdown(LLC_ADDR &llc_addr, addr_t addr);
     bool fetch_line(LLC_ADDR &llc_addr, DATA_LINE &llc_data);
-    // id_t FindOwner(DATA_LINE &llc_data);
-    MSG rcv_req(id_t &tu_id, MSG &tu_req, word_offset_t mask, DATA_LINE &llc_data);
-    void rcv_req_word(id_t &tu_id, MSG &tu_req);
-    void rcv_req_line(id_t &tu_id, MSG &tu_req);
+    // id_bit_t FindOwner(DATA_LINE &llc_data);
+    void rcv_req(id_bit_t &tu_id, MSG &tu_req, word_offset_t offset, DATA_LINE &llc_data);
+    void rcv_req_word(id_bit_t &tu_id, MSG &tu_req);
+    void rcv_req_line(id_bit_t &tu_id, MSG &tu_req);
+    void rcv_rsp_word(MSG &rsp_in);
+    void rcv_rsp_line(MSG &rsp_in);
     void snd_req();
     void snd_rsp();
     // void dev_lookup_in_llc(addr_t dev_addr);
@@ -153,17 +159,17 @@ public:
     // void read_set(llc_addr_t base, llc_way_t offset);
     // void send_mem_REQ(bool hwrite, line_addr_t line_addr, hprot_t hprot, line_t line);
     // void get_mem_RSP(line_t &line);
-    // void send_RSP_out(coh_msg_t coh_msg, line_addr_t addr, line_t line, cache_id_t REQ_id, cache_id_t dest_id, invack_cnt_t invack_cnt, word_offset_t_t word_offset_t, word_mask_t word_mask);
-    // void send_fwd_out(mix_msg_t coh_msg, line_addr_t addr, cache_id_t REQ_id, cache_id_t dest_id, word_mask_t word_mask);
-    // void send_fwd_out_data(mix_msg_t coh_msg, line_addr_t addr, cache_id_t REQ_id, cache_id_t dest_id, word_mask_t word_mask, line_t data);
-    // bool send_fwd_with_owner_mask(mix_msg_t coh_msg, line_addr_t addr, cache_id_t REQ_id, word_mask_t word_mask, line_t data);
+    // void send_RSP_out(coh_msg_t coh_msg, line_addr_t addr, line_t line, cache_id_bit_t REQ_id, cache_id_bit_t dest_id, invack_cnt_t invack_cnt, word_offset_t_t word_offset_t, word_mask_t word_mask);
+    // void send_fwd_out(mix_msg_t coh_msg, line_addr_t addr, cache_id_bit_t REQ_id, cache_id_bit_t dest_id, word_mask_t word_mask);
+    // void send_fwd_out_data(mix_msg_t coh_msg, line_addr_t addr, cache_id_bit_t REQ_id, cache_id_bit_t dest_id, word_mask_t word_mask, line_t data);
+    // bool send_fwd_with_owner_mask(mix_msg_t coh_msg, line_addr_t addr, cache_id_bit_t REQ_id, word_mask_t word_mask, line_t data);
     // // returns if any fwd was sent
-    // bool send_fwd_with_owner_mask_data(mix_msg_t coh_msg, line_addr_t addr, cache_id_t REQ_id, word_mask_t word_mask, line_t data, line_t data_out);
-    // int send_inv_with_sharer_list(line_addr_t addr, sharers_t sharer_list);
+    // bool send_fwd_with_owner_mask_data(mix_msg_t coh_msg, line_addr_t addr, cache_id_bit_t REQ_id, word_mask_t word_mask, line_t data, line_t data_out);
+    // int send_inv_with_sharer_list(line_addr_t addr, id_bit_t sharer_list);
     // // returns number of incack to expect
-    // void send_dma_RSP_out(coh_msg_t coh_msg, line_addr_t addr, line_t line, llc_coh_dev_id_t REQ_id, cache_id_t dest_id, invack_cnt_t invack_cnt, word_offset_t_t word_offset_t);
+    // void send_dma_RSP_out(coh_msg_t coh_msg, line_addr_t addr, line_t line, llc_coh_dev_id_bit_t REQ_id, cache_id_bit_t dest_id, invack_cnt_t invack_cnt, word_offset_t_t word_offset_t);
     // bool is_amo(coh_msg_t coh_msg);
-    // void fill_REQs(mix_msg_t msg, cache_id_t REQ_id, addr_breakdown_llc_t addr_br, llc_tag_t tag_estall, llc_way_t way_hit, llc_unstable_state_t state, hprot_t hprot, word_t word, line_t line, word_mask_t word_mask, sc_uint<REQS_BITS> REQs_i);
+    // void fill_REQs(mix_msg_t msg, cache_id_bit_t REQ_id, addr_breakdown_llc_t addr_br, llc_tag_t tag_estall, llc_way_t way_hit, llc_unstable_state_t state, hprot_t hprot, word_t word, line_t line, word_mask_t word_mask, sc_uint<REQS_BITS> REQs_i);
     // // write REQs buf
 
     // bool REQs_peek_REQ(addr_breakdown_llc_t br, sc_uint<REQS_BITS> &REQs_empty_i);
@@ -185,7 +191,7 @@ public:
 //     bool hit;
 //     word_t data_line[WORDS_PER_LINE]; // word granularity;
 //     state_t state;
-//     sharers_t sharers;
+//     id_bit_t sharers;
 //     void fetch_line(LLC &llc, LLC_ADDR &llc_addr);
 // };
 
@@ -200,5 +206,12 @@ public:
 //     bool state_buf[MEM_ROW][STATE_BITS];
 //     void llc_lookup_in_mem(addr_t *addr, bool &evict);
 // };
+
+std::vector<MSG> bus;
+// DEV cpu, gpu, acc;
+// TU tcpu, tgpu, tacc;
+DEV devs[MAX_DEVS];
+TU tus[MAX_DEVS];
+LLC llc;
 
 #endif // __CLASSES_HPP__

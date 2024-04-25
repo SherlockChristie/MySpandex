@@ -1,5 +1,6 @@
 #include "classes.hpp"
 #include "bit_utils.hpp"
+// 分开写函数的作用在于不用重复breakdown和fetch_line;
 
 // void LLC::msg_init()
 // {
@@ -87,7 +88,7 @@ bool LLC::fetch_line(LLC_ADDR &llc_addr, DATA_LINE &llc_data)
 //     }
 // };
 
-void LLC::rcv_req(id_t &tu_id, MSG &tu_req, word_offset_t offset, DATA_LINE &llc_data)
+void LLC::rcv_req(id_num_t &tu_id, MSG &tu_req, word_offset_t offset, DATA_LINE &llc_data)
 // Behaviour when LLC receives an external request from TU (Table III).
 {
     MSG gen;
@@ -97,7 +98,8 @@ void LLC::rcv_req(id_t &tu_id, MSG &tu_req, word_offset_t offset, DATA_LINE &llc
     // fetch_line(llc_addr, llc_data);
     // msg_init();
 
-    gen.dest = tu_id;
+    unsigned long id = tu_id.to_ulong();
+    gen.dest.set(id);
     // Default destination: the requestor.
     // gen.mask.set(offset.to_ulong());
     gen.addr = tu_req.addr;
@@ -135,7 +137,7 @@ void LLC::rcv_req(id_t &tu_id, MSG &tu_req, word_offset_t offset, DATA_LINE &llc
             else if (data.state == SPX_O)
             {
                 gen.msg = FWD_REQ_V;
-                gen.dest = FindOwner(llc_data);
+                gen.dest.set(FindOwner(llc_data).to_ulong());
             };
             break;
         }
@@ -151,7 +153,7 @@ void LLC::rcv_req(id_t &tu_id, MSG &tu_req, word_offset_t offset, DATA_LINE &llc
                 }
                 else if (data.state == SPX_O)
                 {
-                    gen.dest = FindOwner(llc_data);
+                    gen.dest.set(FindOwner(llc_data).to_ulong());
                     if (gen.dest == CPU) // REQS1;
                     {
                         // go to blocking states;
@@ -178,7 +180,7 @@ void LLC::rcv_req(id_t &tu_id, MSG &tu_req, word_offset_t offset, DATA_LINE &llc
             if (data.state == SPX_O)
             {
                 gen.msg = FWD_REQ_O;
-                gen.dest = FindOwner(llc_data);
+                gen.dest.set(FindOwner(llc_data).to_ulong());
                 data.state = SPX_V;
             }
             else if (data.state == SPX_S)
@@ -200,7 +202,7 @@ void LLC::rcv_req(id_t &tu_id, MSG &tu_req, word_offset_t offset, DATA_LINE &llc
             if (data.state == SPX_O)
             {
                 gen.msg = FWD_REQ_O;
-                gen.dest = FindOwner(llc_data);
+                gen.dest.set(FindOwner(llc_data).to_ulong());
                 // data.state = SPX_O;
             }
 
@@ -223,7 +225,7 @@ void LLC::rcv_req(id_t &tu_id, MSG &tu_req, word_offset_t offset, DATA_LINE &llc
             if (data.state == SPX_O)
             {
                 gen.msg = FWD_RVK_O;
-                gen.dest = FindOwner(llc_data);
+                gen.dest.set(FindOwner(llc_data).to_ulong());
                 // go to blocking states;
                 tu_req.u_state = LLC_OV;
             }
@@ -246,7 +248,7 @@ void LLC::rcv_req(id_t &tu_id, MSG &tu_req, word_offset_t offset, DATA_LINE &llc
             if (data.state == SPX_O)
             {
                 gen.msg = FWD_REQ_Odata;
-                gen.dest = FindOwner(llc_data);
+                gen.dest.set(FindOwner(llc_data).to_ulong());
                 // data.state == SPX_O; // no blocking states;
             }
             else if (data.state == SPX_V)
@@ -269,8 +271,8 @@ void LLC::rcv_req(id_t &tu_id, MSG &tu_req, word_offset_t offset, DATA_LINE &llc
         {
             if (data.state == SPX_O)
             {
-                gen.dest = FindOwner(llc_data);
-                if (tu_id == gen.dest)
+                gen.dest.set(FindOwner(llc_data).to_ulong());
+                if (gen.dest.test(id))
                 {
                     data.state == SPX_V;
                     gen.msg = RSP_WB_ACK;
@@ -298,9 +300,10 @@ void LLC::rcv_req(id_t &tu_id, MSG &tu_req, word_offset_t offset, DATA_LINE &llc
     WordIns(data, llc_data, offset);
     // Save changed word data state back;
     rsp_buf.push_back(gen);
+    req_buf.pop_back();
 }
 
-void LLC::rcv_req_word(id_t &tu_id, MSG &tu_req)
+void LLC::rcv_req_word(id_bit_t &tu_id, MSG &tu_req)
 // Behaviour when LLC receives an external request from TU (Table III).
 {
     breakdown(llc_addr, tu_req.addr);
@@ -315,7 +318,7 @@ void LLC::rcv_req_word(id_t &tu_id, MSG &tu_req)
     rcv_req(tu_id, tu_req, tu_req.offset, llc_data);
 }
 
-void LLC::rcv_req_line(id_t &tu_id, MSG &tu_req)
+void LLC::rcv_req_line(id_bit_t &tu_id, MSG &tu_req)
 // LLC is always word granularity; if receive a line granularity request, breakdown into word granularity;
 {
     breakdown(llc_addr, tu_req.addr);
@@ -340,40 +343,25 @@ void LLC::rcv_req_line(id_t &tu_id, MSG &tu_req)
     // }
 }
 
-void LLC::rcv_rsp(MSG &rsp_in, word_offset_t offset, DATA_LINE &llc_data)
+// rcv_rsp can be used in any dev, go to bit_utils.hpp;
+
+void LLC::rcv_rsp_word(MSG &rsp_in)
 {
     breakdown(llc_addr, rsp_in.addr);
     fetch_line(llc_addr, llc_data);
 
-    DATA_WORD data;
-    WordExt(data, llc_data, offset);
+    rcv_rsp(rsp_in, rsp_in.offset, llc_data);
+}
 
-    switch (rsp_in.msg)
+void LLC::rcv_rsp_line(MSG &rsp_in)
+{
+    breakdown(llc_addr, rsp_in.addr);
+    fetch_line(llc_addr, llc_data);
+
+    for (int i = 0; i < WORDS_PER_LINE; i++)
     {
-    case RSP_V:
-    {
-        data.state = SPX_V;
-        break;
+        rcv_rsp(rsp_in, bitset<WORDS_OFF>(i), llc_data);
+        // rsp_buf.push_back(rcv_req(tu_id, tu_req, bitset<WORDS_OFF>(i), llc_data));
     }
-    case RSP_V:
-    {
-        data.state = SPX_O;
-        break;
-    }
-    case RSP_V:
-    {
-        data.state = SPX_O;
-        break;
-    }
-    case RSP_V:
-    {
-        data.state = SPX_O;
-        break;
-    }
-    case RSP_V:
-    {
-        data.state = SPX_O;
-        break;
-    }
-    }
+
 }

@@ -96,7 +96,7 @@ inline void llc_spandex::get_mem_RSP(line_t &line)
     line = mem_RSP.line;
 }
 
-inline bool llc_spandex::send_fwd_with_owner_mask(mix_msg_t coh_msg, line_addr_t addr, cache_id_t REQ_id, word_mask_t word_mask, line_t data)
+inline bool llc_spandex::send_fwd_with_owner_mask(mix_msg_t coh_msg, line_addr_t addr, cache_id_bit_t REQ_id, word_mask_t word_mask, line_t data)
 {
     fwd_coal_send_count = 0;
     for (int i = 0; i < WORDS_PER_LINE; i++) {
@@ -135,7 +135,7 @@ inline bool llc_spandex::send_fwd_with_owner_mask(mix_msg_t coh_msg, line_addr_t
     return fwd_coal_send_count > 0;
 }
 
-inline bool llc_spandex::send_fwd_with_owner_mask_data(mix_msg_t coh_msg, line_addr_t addr, cache_id_t REQ_id, word_mask_t word_mask, line_t data, line_t data_out)
+inline bool llc_spandex::send_fwd_with_owner_mask_data(mix_msg_t coh_msg, line_addr_t addr, cache_id_bit_t REQ_id, word_mask_t word_mask, line_t data, line_t data_out)
 {
     fwd_coal_send_count = 0;
     for (int i = 0; i < WORDS_PER_LINE; i++) {
@@ -173,7 +173,7 @@ inline bool llc_spandex::send_fwd_with_owner_mask_data(mix_msg_t coh_msg, line_a
     return fwd_coal_send_count > 0;
 }
 
-inline int llc_spandex::send_inv_with_sharer_list(line_addr_t addr, sharers_t sharer_list)
+inline int llc_spandex::send_inv_with_sharer_list(line_addr_t addr, id_bit_t sharer_list)
 {
     HLS_DEFINE_PROTOCOL("inv_all_sharers");
     int cnt = 0;

@@ -57,8 +57,8 @@ void LLC::read_set(const llc_addr_t base, const llc_way_t way_offset)
 }
 
 
-void LLC::send_RSP_out(coh_msg_t coh_msg, line_addr_t addr, line_t line, cache_id_t REQ_id,
-                              cache_id_t dest_id, invack_cnt_t invack_cnt, word_offset_t_t word_offset_t, word_mask_t word_mask)
+void LLC::send_RSP_out(coh_msg_t coh_msg, line_addr_t addr, line_t line, cache_id_bit_t REQ_id,
+                              cache_id_bit_t dest_id, invack_cnt_t invack_cnt, word_offset_t_t word_offset_t, word_mask_t word_mask)
 {
     SEND_RSP_OUT;
     RSP_out_t<CACHE_ID_WIDTH> RSP_out;
@@ -75,7 +75,7 @@ void LLC::send_RSP_out(coh_msg_t coh_msg, line_addr_t addr, line_t line, cache_i
     RSP_out.nb_put(RSP_out);
 }
 
-void LLC::send_fwd_out(mix_msg_t coh_msg, line_addr_t addr, cache_id_t REQ_id, cache_id_t dest_id, word_mask_t word_mask)
+void LLC::send_fwd_out(mix_msg_t coh_msg, line_addr_t addr, cache_id_bit_t REQ_id, cache_id_bit_t dest_id, word_mask_t word_mask)
 {
     SEND_FWD_OUT;
     llc_fwd_out_t fwd_out;
@@ -90,8 +90,8 @@ void LLC::send_fwd_out(mix_msg_t coh_msg, line_addr_t addr, cache_id_t REQ_id, c
     llc_fwd_out.nb_put(fwd_out);
 }
 
-void LLC::send_dma_RSP_out(coh_msg_t coh_msg, line_addr_t addr, line_t line, llc_coh_dev_id_t REQ_id,
-                                  cache_id_t dest_id, invack_cnt_t invack_cnt, word_offset_t_t word_offset_t)
+void LLC::send_dma_RSP_out(coh_msg_t coh_msg, line_addr_t addr, line_t line, llc_coh_dev_id_bit_t REQ_id,
+                                  cache_id_bit_t dest_id, invack_cnt_t invack_cnt, word_offset_t_t word_offset_t)
 {
     SEND_DMA_RSP_OUT;
     RSP_out_t<LLC_COH_DEV_ID_WIDTH> RSP_out;
@@ -107,7 +107,7 @@ void LLC::send_dma_RSP_out(coh_msg_t coh_msg, line_addr_t addr, line_t line, llc
     llc_dma_RSP_out.nb_put(RSP_out);
 }
 
-void LLC::send_fwd_out_data(mix_msg_t coh_msg, line_addr_t addr, cache_id_t REQ_id, cache_id_t dest_id, word_mask_t word_mask, line_t data)
+void LLC::send_fwd_out_data(mix_msg_t coh_msg, line_addr_t addr, cache_id_bit_t REQ_id, cache_id_bit_t dest_id, word_mask_t word_mask, line_t data)
 {
     SEND_FWD_OUT;
     llc_fwd_out_t fwd_out;
@@ -123,7 +123,7 @@ void LLC::send_fwd_out_data(mix_msg_t coh_msg, line_addr_t addr, cache_id_t REQ_
     llc_fwd_out.nb_put(fwd_out);
 }
 
-inline bool LLC::send_fwd_with_owner_mask(mix_msg_t coh_msg, line_addr_t addr, cache_id_t REQ_id, word_mask_t word_mask, line_t data)
+inline bool LLC::send_fwd_with_owner_mask(mix_msg_t coh_msg, line_addr_t addr, cache_id_bit_t REQ_id, word_mask_t word_mask, line_t data)
 {
     fwd_coal_send_count = 0;
     for (int i = 0; i < WORDS_PER_LINE; i++)
@@ -165,7 +165,7 @@ inline bool LLC::send_fwd_with_owner_mask(mix_msg_t coh_msg, line_addr_t addr, c
     return fwd_coal_send_count > 0;
 }
 
-inline bool LLC::send_fwd_with_owner_mask_data(mix_msg_t coh_msg, line_addr_t addr, cache_id_t REQ_id, word_mask_t word_mask, line_t data, line_t data_out)
+inline bool LLC::send_fwd_with_owner_mask_data(mix_msg_t coh_msg, line_addr_t addr, cache_id_bit_t REQ_id, word_mask_t word_mask, line_t data, line_t data_out)
 {
     fwd_coal_send_count = 0;
     for (int i = 0; i < WORDS_PER_LINE; i++)
@@ -206,7 +206,7 @@ inline bool LLC::send_fwd_with_owner_mask_data(mix_msg_t coh_msg, line_addr_t ad
     return fwd_coal_send_count > 0;
 }
 
-inline int LLC::send_inv_with_sharer_list(line_addr_t addr, sharers_t sharer_list)
+inline int LLC::send_inv_with_sharer_list(line_addr_t addr, id_bit_t sharer_list)
 {
     HLS_DEFINE_PROTOCOL("inv_all_sharers");
     int cnt = 0;
@@ -223,7 +223,7 @@ inline int LLC::send_inv_with_sharer_list(line_addr_t addr, sharers_t sharer_lis
 }
 
 /// write REQs buf
-void LLC::fill_REQs(mix_msg_t msg, cache_id_t REQ_id, addr_breakdown_llc_t addr_br, llc_tag_t tag_estall, llc_way_t way_hit,
+void LLC::fill_REQs(mix_msg_t msg, cache_id_bit_t REQ_id, addr_breakdown_llc_t addr_br, llc_tag_t tag_estall, llc_way_t way_hit,
                     llc_unstable_state_line_t state, hprot_t hprot, word_t word, line_t line, word_mask_t word_mask, bitset<REQS_BITS> REQs_i)
 {
     LLC_FILL_REQS;

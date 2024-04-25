@@ -27,9 +27,9 @@ typedef bitset<ADDR_SIZE> addr_t;
 
 typedef bitset<STATE_DEV> dev_state_t;
 typedef bitset<STATE_LINE> spx_line_state_t;
-// the size of word_state_t should be max(STATE_LINE,STATE_DEV);
 typedef bitset<STATE_WORDS> spx_word_state_t;
 
+// the size of word_state_t should be max(STATE_LINE,STATE_DEV);
 typedef bitset<STATE_DEV> word_state_t;
 typedef bitset<STATE_UNSTABLE> unstable_state_t;
 typedef bitset<DEV_TAG_BITS> dev_tag_t;
@@ -37,10 +37,10 @@ typedef bitset<LLC_TAG_BITS> llc_tag_t;
 typedef bitset<DEV_INDEX_BITS> dev_index_t;
 typedef bitset<LLC_INDEX_BITS> llc_index_t;
 // One-hot for sharers; e.g. 0b0110 indicates that dev_2 and dev_1 shares it;
-typedef bitset<MAX_DEVS> sharers_t;
-// typedef bitset<MAX_DEVS_BITS> id_t;
+typedef bitset<MAX_DEVS> id_bit_t;
+// typedef bitset<MAX_DEVS_BITS> id_bit_t;
 // This is a snooping-based protocol, you just broadcast the message;
-typedef sharers_t id_t;
+typedef bitset<MAX_DEVS_BITS> id_num_t;
 
 typedef bitset<WORDS_PER_LINE> mask_t;
 typedef bitset<WORDS_OFF> word_offset_t;
@@ -58,7 +58,7 @@ struct DATA_LINE
     // GPU and MESI only use line_state;
     // DeNovo. LLC and TU uses whole state_t(line_state & word_state);
     spx_word_state_t word_state;
-    sharers_t sharers;
+    id_bit_t sharers;
 };
 
 struct DATA_WORD
@@ -66,7 +66,7 @@ struct DATA_WORD
     // addr_t addr;
     word_t data;
     word_state_t state;
-    // sharers_t sharers;
+    // id_bit_t sharers;
     // No, Spandex stores sharers for the whole line;
     // Also do not need owners_t, since if in O, data field itself stores the owner id;
     // MESI won't use DATA_WORD;
@@ -79,7 +79,7 @@ struct MSG
     uint8_t id; // Every req/fwd has an unique id, rsp has an id same with its corrsponding rsp/fwd.
     // LSB 00:line/word0?
     mask_t mask;// if all the line is ready;
-    id_t dest;   // Destination"s" of the request;
+    id_bit_t dest;   // Destination"s" of the request;
     addr_t addr; // Used when it needs data instead of just ownership.
     uint8_t msg;
     // dev_req: Read, write or RMW;
@@ -91,12 +91,13 @@ struct MSG
     // Store the transient states in the req that triggers it instead of the LLC self.
     DATA_LINE data_line;
     DATA_WORD data_word;
+    uint8_t retry_times;
 };
 
 // Does not need DEV_REQ, TU_REQ, LLC_REQ;
 // struct REQ
 // {
-//     id_t dest;   // Destination of the request;
+//     id_bit_t dest;   // Destination of the request;
 //     addr_t addr; // Used when it needs data instead of just ownership.
 //     uint8_t msg;
 //     // dev_msg: Read, write or RMW;
@@ -110,7 +111,7 @@ struct MSG
 // struct RSP
 // {
 //     // uint8_t req_id;
-//     id_t dest;
+//     id_bit_t dest;
 //     addr_t addr;
 //     // bool to_reqor;
 //     uint8_t msg; // Reponse type;

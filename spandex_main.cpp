@@ -5,10 +5,10 @@
 #include <vector>
 using namespace std;
 
-std::vector<MSG> bus;
-DEV cpu, gpu, acc;
-TU tcpu, tgpu, tacc;
-LLC llc;
+// std::vector<MSG> bus;
+// DEV cpu, gpu, acc;
+// TU tcpu, tgpu, tacc;
+// LLC llc;
 
 int main()
 {

@@ -80,10 +80,14 @@ constexpr int lg2(int x)
 
 /// Device type
 // same with TU's type (but LLC does not have TU)
-#define SPX 1 //0b0001 // LLC (not using LLC because it is already a class name)
-#define CPU 2 //0b0010 // MESI
-#define GPU 4 //0b0100 // GPU coh.
-#define ACC 8 //0b1000 // DeNovo
+// #define SPX 1 //0b0001 // LLC (not using LLC because it is already a class name)
+// #define CPU 2 //0b0010 // MESI
+// #define GPU 4 //0b0100 // GPU coh.
+// #define ACC 8 //0b1000 // DeNovo
+#define SPX 0
+#define CPU 1
+#define GPU 2
+#define ACC 3
 
 /// request (DEV to TU)
 #define READ 0   // read

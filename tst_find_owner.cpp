@@ -4,7 +4,7 @@
 #include "consts.hpp"
 using namespace std;
 
-id_t FindOwner(DATA_LINE &data_line)
+id_bit_t FindOwner(DATA_LINE &data_line)
 {
     DATA_WORD owner_word;
     for (int i = 0; i < WORDS_PER_LINE; i++)
@@ -25,7 +25,7 @@ id_t FindOwner(DATA_LINE &data_line)
     // std::bitset<BITS_PER_BYTE*BYTES_PER_WORD> id;
 
     // the data field itself stores the owner id;
-    id_t owner_bits(owner_word.data[0]);
+    id_bit_t owner_bits(owner_word.data[0]);
     // is that the address or the data? may have problems.
     return owner_bits;
 }
@@ -52,7 +52,7 @@ int main()
     cout << tst.state << endl;
     cout << tst.sharers << endl;
 
-    id_t owner_id = FindOwner(tst);
+    id_bit_t owner_id = FindOwner(tst);
     unsigned long id = owner_id.to_ulong();
     printf("%d\n", id);
     return 0;

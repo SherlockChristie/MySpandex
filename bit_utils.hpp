@@ -7,11 +7,12 @@
 #include <limits>
 #include <cstring>
 #include <cstdint>
+#include <vector>
 // using namespace std;
 #include "consts.hpp"
 #include "blocks.hpp"
 
-void wait(){};
+void wait() {}
 
 constexpr std::size_t ULONGLONG_BITS = std::numeric_limits<unsigned long long>::digits;
 // Usage: new = BitCat[<a_len,b_len>](a,b);
@@ -122,7 +123,10 @@ void WordIns(DATA_WORD &word, DATA_LINE &line, word_offset_t &offset)
         // if (word.state == DEV_O || word.state == LLC_O)
         // won't have problem since both DEV_O and LLC_O are 2;
         // bool is_dev not needed;
-        line.state.set(off);
+        line.line_state.set(off);
+    else
+        line.line_state = BitSub<STATE_DEV, STATE_LINE>(word.state, 0);
+    // 行状态等同于字状态;
 }
 
 void WordExt(DATA_WORD &word, DATA_LINE &line, word_offset_t &offset)
@@ -135,7 +139,7 @@ void WordExt(DATA_WORD &word, DATA_LINE &line, word_offset_t &offset)
         word.data[i] = line.data[byte_off];
         byte_off++;
     }
-    if (line.state.test(off))
+    if (line.line_state.test(off))
         word.state = SPX_O;
     else
     {
@@ -145,7 +149,7 @@ void WordExt(DATA_WORD &word, DATA_LINE &line, word_offset_t &offset)
     }
 }
 
-id_t FindOwner(DATA_LINE &data)
+id_num_t FindOwner(DATA_LINE &data)
 {
     DATA_WORD owner_word;
     for (int i = 0; i < WORDS_PER_LINE; i++)
@@ -158,17 +162,17 @@ id_t FindOwner(DATA_LINE &data)
         }
     }
     // the data field itself stores the owner id;
-    id_t owner_bits(owner_word.data[0]);
-    // id_t only has 2 bits; so just get owner_word.data[0];
+    id_num_t owner_bits(owner_word.data[0]);
+    // id_bit_t only has 2 bits; so just get owner_word.data[0];
     return owner_bits;
 }
 
-id_t InvSharers(sharers_t sharers, id_t self)
+id_bit_t InvSharers(id_bit_t sharers, id_bit_t self)
 // Invalidate sharers for a downgrade from state S.
 {
-    id_t dest;
+    id_bit_t dest;
     dest = sharers;
-    dest &= (~self); 
+    dest &= (~self);
     // Send message to all sharers except itself.
     // for (int i = 0; i < MAX_DEVS; i++)
     // {
@@ -186,4 +190,48 @@ id_t InvSharers(sharers_t sharers, id_t self)
 // {
 // }
 
+void rcv_rsp(MSG &rsp_in, word_offset_t offset, DATA_LINE &data_line)
+{
+    DATA_WORD data;
+    WordExt(data, data_line, offset);
+
+    switch (rsp_in.msg)
+    {
+    case RSP_V:
+    {
+        data.state = SPX_V;
+        break;
+    }
+    case RSP_S:
+    {
+        data.state = SPX_S;
+        break;
+    }
+    case RSP_WTdata:
+    {
+        data.state = SPX_I;
+        break;
+    }
+    case RSP_Odata:
+    {
+        data.state = SPX_O;
+        break;
+    }
+    }
+
+    WordIns(data, data_line, offset);
+}
+
+bool is_conflict((std::vector<MSG> &req_buf), MSG new)
+{
+    if (!req_buf.empty())
+    {
+        for (int i = 0; i < req_buf.size(); i++)
+        {
+            if (new.addr == req_buf[i].addr)
+                return true;
+        }
+    }
+    return false;
+}
 #endif // BIT_UTILS_HPP
