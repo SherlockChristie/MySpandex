@@ -28,7 +28,7 @@ constexpr int lg2(int x)
 
 #define ADDR_SIZE 32 // 32-bit address;
 #define BITS_PER_BYTE 8
-#define BYTES_PER_WORD 4 // uint8_t for byte, uint32_t for word;
+#define BYTES_PER_WORD 4 // int for byte, uint32_t for word;
 #define WORDS_PER_LINE 4
 #define BYTES_OFF lg2(BYTES_PER_WORD) // 2
 #define WORDS_OFF lg2(WORDS_PER_LINE) // 2
@@ -66,7 +66,7 @@ constexpr int lg2(int x)
 // For each line, two bits indicate whether the line is Invalid, Valid or Shared.
 // For each word within the cache line, a single bit tracks whether the word is Owned in a remote cache.
 // For each Owned word, the data field itself stores the ID of the remote owner.
-#define STATE_DEV lg2(6) // 3
+// #define STATE_DEV lg2(6) // 3
 
 #define MAX_DEVS 4                  // 4=3+1; Also considering LLC.
 #define MAX_DEVS_BITS lg2(MAX_DEVS) // 2 bits for both sharers and owners ID;
@@ -100,8 +100,9 @@ constexpr int lg2(int x)
 #define DEV_V 1
 #define DEV_O 2
 #define DEV_S 3
-#define DEV_M 4
-#define DEV_E 5
+#define DEV_M 1
+#define DEV_E 2
+// 4, not 6;
 
 // Device Transient states
 #define DEV_IV 1

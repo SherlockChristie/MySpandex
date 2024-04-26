@@ -2,8 +2,7 @@
 #include "bit_utils.hpp"
 using namespace std;
 
-void DEV::dev_caller_tu() {}
-void DEV::breakdown(DEV_ADDR &dev_addr, addr_t addr)
+void DEV::breakdown(addr_t addr)
 {
     dev_addr.b_off = BitSub<ADDR_SIZE, BYTES_OFF>(addr, 0);
     dev_addr.w_off = BitSub<ADDR_SIZE, WORDS_OFF>(addr, BYTES_OFF);
@@ -11,8 +10,9 @@ void DEV::breakdown(DEV_ADDR &dev_addr, addr_t addr)
     dev_addr.tag = BitSub<ADDR_SIZE, DEV_TAG_BITS>(addr, DEV_INDEX_BITS + WORDS_OFF + BYTES_OFF);
 }
 
-bool DEV::fetch_line(DEV_ADDR &dev_addr, DATA_LINE &dev_line)
+bool DEV::fetch_line()
 {
+    unsigned long id = dev_id.to_ulong();
     line_t zero = {0};
     unsigned long dev_index = (dev_addr.index).to_ulong();
     dev_line.line_state = state_buf[dev_index];

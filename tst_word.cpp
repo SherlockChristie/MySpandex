@@ -1,5 +1,5 @@
 #include <algorithm> // For std::copy
-#include <cstdint>   // For uint8_t
+#include <cstdint>   // For int
 #include <iostream>
 
 #define BYTES_PER_WORD 4

@@ -21,7 +21,7 @@
 //     }
 // }
 
-void LLC::breakdown(LLC_ADDR &llc_addr, addr_t addr)
+void LLC::breakdown(addr_t addr)
 {
     llc_addr.b_off = BitSub<ADDR_SIZE, BYTES_OFF>(addr, 0);
     llc_addr.w_off = BitSub<ADDR_SIZE, WORDS_OFF>(addr, BYTES_OFF);
@@ -29,36 +29,36 @@ void LLC::breakdown(LLC_ADDR &llc_addr, addr_t addr)
     llc_addr.tag = BitSub<ADDR_SIZE, LLC_TAG_BITS>(addr, LLC_INDEX_BITS + WORDS_OFF + BYTES_OFF);
 }
 
-bool LLC::fetch_line(LLC_ADDR &llc_addr, DATA_LINE &llc_data)
+bool LLC::fetch_line()
 {
     line_t zero = {0};
     unsigned long llc_index = (llc_addr.index).to_ulong();
-    llc_data.line_state = line_state_buf[llc_index];
-    llc_data.word_state = word_state_buf[llc_index];
-    llc_data.sharers = sharers_buf[llc_index];
-    if ((tag_buf[llc_index] != llc_addr.tag)) //|| (llc_data.line_state == LLC_I))
+    llc_line.line_state = line_state_buf[llc_index];
+    llc_line.word_state = word_state_buf[llc_index];
+    llc_line.sharers = sharers_buf[llc_index];
+    if ((tag_buf[llc_index] != llc_addr.tag)) //|| (llc_line.line_state == LLC_I))
     {
-        LineCopy(llc_data.data, zero);
+        LineCopy(llc_line.data, zero);
         return 0;
-        // line_t *p = (line_t *)llc_data.data_line;
+        // line_t *p = (line_t *)llc_line.data_line;
         // LineCopy(*p,temp);
         // for (int i = 0; i < WORDS_PER_LINE; i++)
         // {
         //     for (int j = 0; j < BYTES_PER_WORD; j++)
         //     {
-        //         llc_data.data_line[i][j] = 0;
+        //         llc_line.data_line[i][j] = 0;
         //     }
         // }
     }
     else
     {
-        LineCopy(llc_data.data, cache[llc_index]);
+        LineCopy(llc_line.data, cache[llc_index]);
         return 1;
         // for (int i = 0; i < WORDS_PER_LINE; i++)
         // {
         //     for (int j = 0; j < BYTES_PER_WORD; j++)
         //     {
-        //         llc_data.data_line[i][j] = cache[llc_index][i * BYTES_PER_WORD + j];
+        //         llc_line.data_line[i][j] = cache[llc_index][i * BYTES_PER_WORD + j];
         //     }
         // }
     }
@@ -88,7 +88,7 @@ bool LLC::fetch_line(LLC_ADDR &llc_addr, DATA_LINE &llc_data)
 //     }
 // };
 
-void LLC::rcv_req(id_num_t &tu_id, MSG &tu_req, word_offset_t offset, DATA_LINE &llc_data)
+void LLC::rcv_req_single(id_num_t &tu_id, MSG &tu_req, unsigned long offset, DATA_LINE &llc_data)
 // Behaviour when LLC receives an external request from TU (Table III).
 {
     MSG gen;
@@ -106,7 +106,7 @@ void LLC::rcv_req(id_num_t &tu_id, MSG &tu_req, word_offset_t offset, DATA_LINE 
     // Default address: the req's addr.
     gen.gran = GRAN_WORD;
     // Default LLC granularity: word.
-    gen.offset = offset;
+    gen.mask.set(offset);
     // Default mask.
     gen.data_line = llc_data;
     gen.data_word = data;
@@ -299,30 +299,31 @@ void LLC::rcv_req(id_num_t &tu_id, MSG &tu_req, word_offset_t offset, DATA_LINE 
 
     WordIns(data, llc_data, offset);
     // Save changed word data state back;
-    rsp_buf.push_back(gen);
-    req_buf.pop_back();
+    bus.push_back(gen);
 }
 
-void LLC::rcv_req_word(id_num_t &tu_id, MSG &tu_req)
-// Behaviour when LLC receives an external request from TU (Table III).
-{
-    breakdown(llc_addr, tu_req.addr);
-    fetch_line(llc_addr, llc_line);
-    // msg_init();
+// void LLC::rcv_req_word(id_num_t &tu_id, MSG &tu_req)
+// // Behaviour when LLC receives an external request from TU (Table III).
+// {
+//     breakdown(tu_req.addr);
+//     fetch_line();
+//     // msg_init();
 
-    // if (tu_req.mask.any())
-    // {
-    //     WordExt(data, llc_data, tu_req.mask);
-    // }
-    // else
-    rcv_req(tu_id, tu_req, tu_req.offset, llc_line);
-}
+//     // if (tu_req.mask.any())
+//     // {
+//     //     WordExt(data, llc_data, tu_req.mask);
+//     // }
+//     // else
+//     rcv_req(tu_id, tu_req, tu_req.offset, llc_line);
+// }
 
-void LLC::rcv_req_line(id_num_t &tu_id, MSG &tu_req)
+// NOTE: Word granularity doesn;t mean that it only have req for one word in a line;
+// It may be a single multi-word request with a bitmask!!!!!!!!!!!!!!!!!!!!!
+void LLC::rcv_req(id_num_t &tu_id, MSG &tu_req)
 // LLC is always word granularity; if receive a line granularity request, breakdown into word granularity;
 {
-    breakdown(llc_addr, tu_req.addr);
-    fetch_line(llc_addr, llc_line);
+    breakdown(tu_req.addr);
+    fetch_line();
     // msg_init();
 
     // if (llc_data.word_state.any())
@@ -330,9 +331,13 @@ void LLC::rcv_req_line(id_num_t &tu_id, MSG &tu_req)
     // {
     for (int i = 0; i < WORDS_PER_LINE; i++)
     {
-        rcv_req(tu_id, tu_req, bitset<WORDS_OFF>(i), llc_line);
+        if (tu_req.mask.test(i))
+        {
+            rcv_req_single(tu_id, tu_req, i, llc_line);
+        }
         // rsp_buf.push_back(rcv_req(tu_id, tu_req, bitset<WORDS_OFF>(i), llc_data));
     }
+    req_buf.pop_back();
     //}
     // else // the whole line only have 1 rsp;
     // {
@@ -343,24 +348,19 @@ void LLC::rcv_req_line(id_num_t &tu_id, MSG &tu_req)
     // }
 }
 
-// rcv_rsp can be used in any dev, go to bit_utils.hpp;
+// rcv_rsp_single can be used in any dev, go to bit_utils.hpp;
 
-void LLC::rcv_rsp_word(MSG &rsp_in)
+void LLC::rcv_rsp(MSG &rsp_in)
 {
-    breakdown(llc_addr, rsp_in.addr);
-    fetch_line(llc_addr, llc_line);
-
-    rcv_rsp(rsp_in, rsp_in.offset, llc_line);
-}
-
-void LLC::rcv_rsp_line(MSG &rsp_in)
-{
-    breakdown(llc_addr, rsp_in.addr);
-    fetch_line(llc_addr, llc_line);
+    breakdown(rsp_in.addr);
+    fetch_line();
 
     for (int i = 0; i < WORDS_PER_LINE; i++)
     {
-        rcv_rsp(rsp_in, bitset<WORDS_OFF>(i), llc_line);
+        if (rsp_in.mask.test(i))
+        {
+            rcv_rsp_single(rsp_in, i, llc_line);
+        }
         // rsp_buf.push_back(rcv_req(tu_id, tu_req, bitset<WORDS_OFF>(i), llc_data));
     }
 }
@@ -372,11 +372,11 @@ void LLC::solve_pending_ReqWB(id_num_t &tu_id)
     unsigned long id = tu_id.to_ulong();
     gen.dest.set(id);
 
-    req_buf.erase(req_buf.begin());// pop out llc's ReqWB;
-    bus.push_back(gen);// bus to pop out tu's ReqWB;
+    req_buf.erase(req_buf.begin()); // pop out llc's ReqWB;
+    bus.push_back(gen);             // bus to pop out tu's ReqWB;
 }
 
-// void LLC::solve_pending_ReqWB(uint8_t id)
+// void LLC::solve_pending_ReqWB(int id)
 // {
 //     for (int i = 0; i < req_buf.size(); i++)
 //     {

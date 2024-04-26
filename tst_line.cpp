@@ -1,4 +1,4 @@
-#include <cstdint> // For uint8_t
+#include <cstdint> // For int
 #include <cstring> // For std::memcpy
 #include <iostream> // For std::cout
 

@@ -33,7 +33,7 @@ id_bit_t FindOwner(DATA_LINE &data_line)
 int main()
 {
     DATA_LINE tst;
-    spx_line_state_t states("010100"); // 01_0100; 01:Line in Valid; 0100: Word2 in O
+    state_t states("010100"); // 01_0100; 01:Line in Valid; 0100: Word2 in O
     // tst.data[DEV_COL] = {0};
     tst.state = states;
     tst.sharers = {0};

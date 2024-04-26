@@ -31,7 +31,7 @@
 
 void WordIns(word_t word, word_offset_t offset, line_t line)
 {
-    uint8_t byte_off = (offset.to_ulong()) * BYTES_PER_WORD;
+    int byte_off = (offset.to_ulong()) * BYTES_PER_WORD;
     printf("%d\n", byte_off);
     for (int i = 0; i < BYTES_PER_WORD; i++)
     {

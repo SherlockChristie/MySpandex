@@ -1,13 +1,13 @@
 #include <iostream>
 #include <vector>
-#include <cstdint> // For uint8_t, uint32_t etc.
+#include <cstdint> // For int, uint32_t etc.
 
 class Memory {
 public:
     Memory(size_t size) : memory(size, 0) {}
 
     // 读取一个字节
-    uint8_t readByte(uint32_t address) {
+    int readByte(uint32_t address) {
         if (address < memory.size()) {
             return memory[address];
         } else {
@@ -18,7 +18,7 @@ public:
     }
 
     // 写入一个字节
-    void writeByte(uint32_t address, uint8_t data) {
+    void writeByte(uint32_t address, int data) {
         if (address < memory.size()) {
             memory[address] = data;
         } else {
@@ -44,7 +44,7 @@ public:
     }
 
 private:
-    std::vector<uint8_t> memory;
+    std::vector<int> memory;
 };
 
 int main() {
