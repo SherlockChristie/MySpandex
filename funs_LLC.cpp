@@ -303,11 +303,11 @@ void LLC::rcv_req(id_num_t &tu_id, MSG &tu_req, word_offset_t offset, DATA_LINE 
     req_buf.pop_back();
 }
 
-void LLC::rcv_req_word(id_bit_t &tu_id, MSG &tu_req)
+void LLC::rcv_req_word(id_num_t &tu_id, MSG &tu_req)
 // Behaviour when LLC receives an external request from TU (Table III).
 {
     breakdown(llc_addr, tu_req.addr);
-    fetch_line(llc_addr, llc_data);
+    fetch_line(llc_addr, llc_line);
     // msg_init();
 
     // if (tu_req.mask.any())
@@ -315,14 +315,14 @@ void LLC::rcv_req_word(id_bit_t &tu_id, MSG &tu_req)
     //     WordExt(data, llc_data, tu_req.mask);
     // }
     // else
-    rcv_req(tu_id, tu_req, tu_req.offset, llc_data);
+    rcv_req(tu_id, tu_req, tu_req.offset, llc_line);
 }
 
-void LLC::rcv_req_line(id_bit_t &tu_id, MSG &tu_req)
+void LLC::rcv_req_line(id_num_t &tu_id, MSG &tu_req)
 // LLC is always word granularity; if receive a line granularity request, breakdown into word granularity;
 {
     breakdown(llc_addr, tu_req.addr);
-    fetch_line(llc_addr, llc_data);
+    fetch_line(llc_addr, llc_line);
     // msg_init();
 
     // if (llc_data.word_state.any())
@@ -330,7 +330,7 @@ void LLC::rcv_req_line(id_bit_t &tu_id, MSG &tu_req)
     // {
     for (int i = 0; i < WORDS_PER_LINE; i++)
     {
-        rcv_req(tu_id, tu_req, bitset<WORDS_OFF>(i), llc_data);
+        rcv_req(tu_id, tu_req, bitset<WORDS_OFF>(i), llc_line);
         // rsp_buf.push_back(rcv_req(tu_id, tu_req, bitset<WORDS_OFF>(i), llc_data));
     }
     //}
@@ -348,20 +348,43 @@ void LLC::rcv_req_line(id_bit_t &tu_id, MSG &tu_req)
 void LLC::rcv_rsp_word(MSG &rsp_in)
 {
     breakdown(llc_addr, rsp_in.addr);
-    fetch_line(llc_addr, llc_data);
+    fetch_line(llc_addr, llc_line);
 
-    rcv_rsp(rsp_in, rsp_in.offset, llc_data);
+    rcv_rsp(rsp_in, rsp_in.offset, llc_line);
 }
 
 void LLC::rcv_rsp_line(MSG &rsp_in)
 {
     breakdown(llc_addr, rsp_in.addr);
-    fetch_line(llc_addr, llc_data);
+    fetch_line(llc_addr, llc_line);
 
     for (int i = 0; i < WORDS_PER_LINE; i++)
     {
-        rcv_rsp(rsp_in, bitset<WORDS_OFF>(i), llc_data);
+        rcv_rsp(rsp_in, bitset<WORDS_OFF>(i), llc_line);
         // rsp_buf.push_back(rcv_req(tu_id, tu_req, bitset<WORDS_OFF>(i), llc_data));
     }
-
 }
+
+void LLC::solve_pending_ReqWB(id_num_t &tu_id)
+{
+    MSG gen = req_buf.front();
+    gen.msg = RSP_NACK; // 撤销此请求，不再是所有者;
+    unsigned long id = tu_id.to_ulong();
+    gen.dest.set(id);
+
+    req_buf.erase(req_buf.begin());// pop out llc's ReqWB;
+    bus.push_back(gen);// bus to pop out tu's ReqWB;
+}
+
+// void LLC::solve_pending_ReqWB(uint8_t id)
+// {
+//     for (int i = 0; i < req_buf.size(); i++)
+//     {
+//         if (req_buf[i].id == id)
+//         {
+//             if (req_buf[i].msg == REQ_WB)
+//             {
+//             }
+//         }
+//     }
+// }

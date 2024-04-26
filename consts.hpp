@@ -177,5 +177,6 @@ constexpr int lg2(int x)
 #define RSP_WT 24
 #define RSP_WTdata 25
 #define RSP_WB_ACK 26
+#define RSP_FWD 27 // Ack fwds;
 
 #endif // __CONSTS_HPP__

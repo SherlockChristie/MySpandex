@@ -222,7 +222,7 @@ void rcv_rsp(MSG &rsp_in, word_offset_t offset, DATA_LINE &data_line)
     WordIns(data, data_line, offset);
 }
 
-bool is_conflict((std::vector<MSG> &req_buf), MSG new)
+bool is_conflict(std::vector<MSG> &req_buf, MSG &new)
 {
     if (!req_buf.empty())
     {

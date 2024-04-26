@@ -114,15 +114,17 @@ public:
     DATA_LINE tu_line;
     DATA_WORD tu_word;
 
-    void msg_init();
+    // void msg_init();
     void req_mapping(unsigned long id, MSG &req);
-    void state_mapping(unsigned long id, DATA_LINE &dev_data);
+    void state_mapping(unsigned long id, DATA_LINE &data_line, DATA_WORD &data_word);
     void mapping_wrapper(DEV &dev);
-    void rcv_fwd();
-    void tu_for_gpu();
-    void tu_for_acc();
-    void tu_for_cpu(TU &sender);
-    void tu_callee_dev();
+    void rcv_fwd(id_num_t &reqor_id, MSG &fwd_in, word_offset_t offset, DATA_LINE &dev_line);
+    void rcv_fwd_word(id_num_t &reqor_id, DEV &owner_dev, MSG &fwd_in);
+    void rcv_fwd_line(id_num_t &reqor_id, DEV &owner_dev, MSG &fwd_in);
+    // void tu_for_gpu();
+    // void tu_for_acc();
+    // void tu_for_cpu(TU &sender);
+    // void tu_callee_dev();
 };
 
 class LLC
@@ -145,13 +147,14 @@ public:
     void breakdown(LLC_ADDR &llc_addr, addr_t addr);
     bool fetch_line(LLC_ADDR &llc_addr, DATA_LINE &llc_data);
     // id_bit_t FindOwner(DATA_LINE &llc_data);
-    void rcv_req(id_bit_t &tu_id, MSG &tu_req, word_offset_t offset, DATA_LINE &llc_data);
-    void rcv_req_word(id_bit_t &tu_id, MSG &tu_req);
-    void rcv_req_line(id_bit_t &tu_id, MSG &tu_req);
+    void rcv_req(id_num_t &tu_id, MSG &tu_req, word_offset_t offset, DATA_LINE &llc_data);
+    void rcv_req_word(id_num_t &tu_id, MSG &tu_req);
+    void rcv_req_line(id_num_t &tu_id, MSG &tu_req);
     void rcv_rsp_word(MSG &rsp_in);
     void rcv_rsp_line(MSG &rsp_in);
     void snd_req();
     void snd_rsp();
+    void solve_pending_ReqWB(id_num_t &tu_id);
     // void dev_lookup_in_llc(addr_t dev_addr);
     // void ctrl(); // Processes.
     // void reset_io();// cache controller

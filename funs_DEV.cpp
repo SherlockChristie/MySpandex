@@ -3,7 +3,6 @@
 using namespace std;
 
 void DEV::dev_caller_tu() {}
-void DEV::solve_pending_REQWB() {}
 void DEV::breakdown(DEV_ADDR &dev_addr, addr_t addr)
 {
     dev_addr.b_off = BitSub<ADDR_SIZE, BYTES_OFF>(addr, 0);
