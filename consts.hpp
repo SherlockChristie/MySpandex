@@ -28,7 +28,7 @@ constexpr int lg2(int x)
 
 #define ADDR_SIZE 32 // 32-bit address;
 #define BITS_PER_BYTE 8
-#define BYTES_PER_WORD 4 // uint8_t for byte, uint32_t for word;
+#define BYTES_PER_WORD 4 // int for byte, uint32_t for word;
 #define WORDS_PER_LINE 4
 #define BYTES_OFF lg2(BYTES_PER_WORD) // 2
 #define WORDS_OFF lg2(WORDS_PER_LINE) // 2
@@ -55,17 +55,18 @@ constexpr int lg2(int x)
 #define LLC_TAG_BITS ADDR_SIZE - LLC_INDEX_BITS - WORDS_OFF - BYTES_OFF // 18
 // 仅后4位有值，高位全为0; 但是保持地址位宽一致;
 
+// max(lg2(8),lg2(11)); //dev unstable or llc unstable bigger one;
 #define STATE_UNSTABLE lg2(11)             // 4
-#define STATE_NUM 2 //+ STATE_UNSTABLE     // 2 bits for a whole line (Invalid, Valid or Shared);
+#define STATE_LINE 2 //+ STATE_UNSTABLE     // 2 bits for a whole line (Invalid, Valid or Shared);
 #define STATE_WORDS WORDS_PER_LINE         // 1 bit for each word;
 // do need to separate them!!!
-// #define STATE_BITS STATE_NUM + STATE_WORDS // no need to separate them;
+// #define STATE_BITS STATE_LINE + STATE_WORDS // no need to separate them;
 // Described in Section III-B:
 // To limit tag and state overhead, allocation occurs at line granularity.
 // For each line, two bits indicate whether the line is Invalid, Valid or Shared.
 // For each word within the cache line, a single bit tracks whether the word is Owned in a remote cache.
 // For each Owned word, the data field itself stores the ID of the remote owner.
-#define STATE_DEV lg2(6) // 3
+// #define STATE_DEV lg2(6) // 3
 
 #define MAX_DEVS 4                  // 4=3+1; Also considering LLC.
 #define MAX_DEVS_BITS lg2(MAX_DEVS) // 2 bits for both sharers and owners ID;
@@ -79,10 +80,14 @@ constexpr int lg2(int x)
 
 /// Device type
 // same with TU's type (but LLC does not have TU)
-#define SPX 1 //0b0001 // LLC (not using LLC because it is already a class name)
-#define CPU 2 //0b0010 // MESI
-#define GPU 4 //0b0100 // GPU coh.
-#define ACC 8 //0b1000 // DeNovo
+// #define SPX 1 //0b0001 // LLC (not using LLC because it is already a class name)
+// #define CPU 2 //0b0010 // MESI
+// #define GPU 4 //0b0100 // GPU coh.
+// #define ACC 8 //0b1000 // DeNovo
+#define SPX 0
+#define CPU 1
+#define GPU 2
+#define ACC 3
 
 /// request (DEV to TU)
 #define READ 0   // read
@@ -95,8 +100,9 @@ constexpr int lg2(int x)
 #define DEV_V 1
 #define DEV_O 2
 #define DEV_S 3
-#define DEV_M 4
-#define DEV_E 5
+#define DEV_M 1
+#define DEV_E 2
+// 4, not 6;
 
 // Device Transient states
 #define DEV_IV 1
@@ -139,8 +145,8 @@ constexpr int lg2(int x)
 #define LLC_SI 10
 #define LLC_WB 11
 
-/// REQuest (TU to LLC)
-#define REQ_NULL 0 // not used REQ.
+/// Request (TU to LLC)
+// #define REQ_NULL 0 // not used REQ.
 #define REQ_S 1
 #define REQ_Odata 2
 #define REQ_WT 3
@@ -151,26 +157,27 @@ constexpr int lg2(int x)
 #define REQ_WTfwd 8
 
 /// Forward (LLC to DEV/TU)
-#define FWD_REQ_S 0     /// same as fwd_gets
-#define FWD_REQ_Odata 1 /// same as fwd_getm
-#define FWD_INV 2       /// same as fwd_inv
-#define FWD_WB_ACK 3    /// same as fwd_putack
-#define FWD_RVK_O 4     /// same as getm_llc
-#define FWD_REQ_V 7     /// non existent in ESP
-#define FWD_REQ_O 6
-#define FWD_WTfwd 5
+#define FWD_REQ_S 9     /// same as fwd_gets
+#define FWD_REQ_Odata 10 /// same as fwd_getm
+#define FWD_INV 11       /// same as fwd_inv
+#define FWD_WB_ACK 12    /// same as fwd_putack
+#define FWD_RVK_O 13     /// same as getm_llc
+#define FWD_REQ_V 14     /// non existent in ESP
+#define FWD_REQ_O 15
+#define FWD_WTfwd 16
 
 /// Response (DEV/TU to DEV/TU, DEV/TU to LLC, LLC to DEV/TU)
-#define RSP_NULL 0 // not used RSP.
-#define RSP_S 1
-#define RSP_Odata 2   /// same as FWD_REQ_odata
-#define RSP_INV_ACK 3 /// same as fwd_inv_spdx
-#define RSP_NACK 4
-#define RSP_RVK_O 5 /// same as fwd_rvk_o
-#define RSP_V 6
-#define RSP_O 7 /// same as FWD_REQ_o
-#define RSP_WT 8
-#define RSP_WTdata 9
-#define RSP_WB_ACK 10
+// #define RSP_NULL 0 // not used RSP.
+#define RSP_S 17
+#define RSP_Odata 18   /// same as FWD_REQ_odata
+#define RSP_INV_ACK 19 /// same as fwd_inv_spdx
+#define RSP_NACK 20
+#define RSP_RVK_O 21 /// same as fwd_rvk_o
+#define RSP_V 22
+#define RSP_O 23 /// same as FWD_REQ_o
+#define RSP_WT 24
+#define RSP_WTdata 25
+#define RSP_WB_ACK 26
+#define RSP_FWD 27 // Ack fwds;
 
 #endif // __CONSTS_HPP__

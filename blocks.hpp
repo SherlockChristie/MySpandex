@@ -1,9 +1,7 @@
 #ifndef __BLOCKS_HPP__
 #define __BLOCKS_HPP__
 
-#include <cstdint> // For uint8_t, uint32_t etc.
-// #include <cmath>
-#include <bitset>
+#include "headers.hpp"
 #include "consts.hpp"
 using namespace std;
 
@@ -25,21 +23,24 @@ typedef byte_t line_t[BYTES_PER_WORD * WORDS_PER_LINE];
 
 typedef bitset<ADDR_SIZE> addr_t;
 
-typedef bitset<STATE_DEV> dev_state_t;
-typedef bitset<STATE_BITS> llc_state_t;
-// the size of word_state_t should be max(STATE_NUM,STATE_DEV);
-typedef bitset<STATE_DEV> word_state_t;
+// typedef bitset<STATE_DEV> dev_state_t;
+typedef bitset<STATE_LINE> state_t;
+typedef bitset<STATE_WORDS> spx_word_state_t;
+
+// the size of word_state_t should be max(STATE_LINE,STATE_DEV);
+// typedef bitset<STATE_DEV> word_state_t;
 typedef bitset<STATE_UNSTABLE> unstable_state_t;
 typedef bitset<DEV_TAG_BITS> dev_tag_t;
 typedef bitset<LLC_TAG_BITS> llc_tag_t;
 typedef bitset<DEV_INDEX_BITS> dev_index_t;
 typedef bitset<LLC_INDEX_BITS> llc_index_t;
 // One-hot for sharers; e.g. 0b0110 indicates that dev_2 and dev_1 shares it;
-typedef bitset<MAX_DEVS> sharers_t;
-// typedef bitset<MAX_DEVS_BITS> id_t;
+typedef bitset<MAX_DEVS> id_bit_t;
+// typedef bitset<MAX_DEVS_BITS> id_bit_t;
 // This is a snooping-based protocol, you just broadcast the message;
-typedef sharers_t id_t;
+typedef bitset<MAX_DEVS_BITS> id_num_t;
 
+typedef bitset<WORDS_PER_LINE> mask_t;
 typedef bitset<WORDS_OFF> word_offset_t;
 typedef bitset<BYTES_OFF> byte_offset_t;
 // typedef bitset<10> req_type;
@@ -51,47 +52,102 @@ struct DATA_LINE
     // bool hit;
     // word_t data_line[WORDS_PER_LINE]; // word granularity;
     line_t data;
-    llc_state_t state;
-    // GPU and MESI only use state[highest 2 bits];
-    // DeNovo. LLC and TU uses whole state_t;
-    sharers_t sharers;
+    state_t line_state;
+    // GPU and MESI only use line_state;
+    // DeNovo. LLC and TU uses whole state_t(line_state & word_state);
+    spx_word_state_t word_state;
+    id_bit_t sharers;
+
+    void Display()
+    {
+        std::cout << "  DATA_LINE display" << std::endl;
+        std::cout << "  data: ";
+        for (int i = BYTES_PER_WORD * WORDS_PER_LINE - 1; i >= 0; i--)
+        {
+            printf("%d ", data[i]);
+        }
+        std::cout << std::endl;
+        std::cout << "  line_state: " << line_state << std::endl;
+        std::cout << "  word_state: " << word_state << std::endl;
+        std::cout << "  sharers: " << sharers << std::endl;
+        std::cout << "  DATA_LINE display end" << std::endl;
+    }
 };
 
 struct DATA_WORD
 {
     // addr_t addr;
     word_t data;
-    word_state_t state;
-    // sharers_t sharers;
+    state_t state;
+    // id_bit_t sharers;
     // No, Spandex stores sharers for the whole line;
     // Also do not need owners_t, since if in O, data field itself stores the owner id;
     // MESI won't use DATA_WORD;
     // DeNovo do the same with Spandex;
     // GPU coh. does not have state S or O;
+
+    void Display()
+    {
+        std::cout << "  DATA_WORD display" << std::endl;
+        std::cout << "  data: ";
+        for (int i = WORDS_PER_LINE - 1; i >= 0; i--)
+        {
+            printf("%d ", data[i]);
+        }
+        std::cout << std::endl;
+        std::cout << "  state: " << state << std::endl;
+        std::cout << "  DATA_WORD display end" << std::endl;
+    }
 };
 
 struct MSG
 {
-    id_t dest;   // Destination"s" of the request;
-    addr_t addr; // Used when it needs data instead of just ownership.
-    uint8_t msg;
+    int id; // Every req/fwd has an unique id, rsp has an id same with its corrsponding rsp/fwd.
+    // LSB 00:line/word0?
+    mask_t mask;   // if all the line is ready;
+    id_bit_t dest; // Destination"s" of the request;
+    addr_t addr;   // Used when it needs data instead of just ownership.
+    int msg;
     // dev_req: Read, write or RMW;
     // tu_req: Translate device message into LLC message.(Table II)
     // llc_req: Fordward message;
-    bool gran;          // 0 for word granularity, 1 for line granularity;
-    word_offset_t mask; // Used when it is a line granularity req.
+    bool gran; // 0 for word granularity, 1 for line granularity;
+    // word_offset_t offset; // Used when it is a line granularity req.
+    // no need, offset only for one, but mask_t for multiple words in a line;
+    mask_t ok_mask; // only used for a multiple-word req to find its rsp collecting condition;
     unstable_state_t u_state;
     // Store the transient states in the req that triggers it instead of the LLC self.
     DATA_LINE data_line;
     DATA_WORD data_word;
+    int retry_times;
+
+    void Display()
+    {
+        std::cout << "Message info display" << std::endl;
+        std::cout << "id: " << id << std::endl;
+        std::cout << "mask: " << mask << std::endl;
+        std::cout << "dest: " << dest << std::endl;
+        std::cout << "addr: " << addr << std::endl;
+        std::cout << "msg: " << msg << std::endl;
+        if (gran)
+            std::cout << "gran: line" << std::endl;
+        else
+            std::cout << "gran: word" << std::endl;
+        std::cout << "ok_mask: " << ok_mask << std::endl;
+        std::cout << "u_state: " << u_state << std::endl;
+        data_line.Display();
+        data_word.Display();
+        std::cout << "retry_times: " << retry_times << std::endl;
+        std::cout << "Message info display end" << std::endl;
+    }
 };
 
 // Does not need DEV_REQ, TU_REQ, LLC_REQ;
 // struct REQ
 // {
-//     id_t dest;   // Destination of the request;
+//     id_bit_t dest;   // Destination of the request;
 //     addr_t addr; // Used when it needs data instead of just ownership.
-//     uint8_t msg;
+//     int msg;
 //     // dev_msg: Read, write or RMW;
 //     // tu_msg: Translate device message into LLC message.(Table II)
 //     // llc_msg: Fordward message;
@@ -102,11 +158,11 @@ struct MSG
 // };
 // struct RSP
 // {
-//     // uint8_t req_id;
-//     id_t dest;
+//     // int req_id;
+//     id_bit_t dest;
 //     addr_t addr;
 //     // bool to_reqor;
-//     uint8_t msg; // Reponse type;
+//     int msg; // Reponse type;
 //     bool gran;
 //     word_offset_t mask;
 //     DATA_LINE data_line;

@@ -45,6 +45,16 @@
         "streambuf": "cpp",
         "typeinfo": "cpp",
         "bitset": "cpp",
-        "cstring": "cpp"
+        "cstring": "cpp",
+        "chrono": "cpp",
+        "condition_variable": "cpp",
+        "ctime": "cpp",
+        "ratio": "cpp",
+        "mutex": "cpp",
+        "thread": "cpp"
+    },
+    "cmake.configureOnOpen": true,
+    "code-runner.executorMap": {
+        "cpp": "cd $dir && g++ -std=c++14 *.cpp  -o $fileNameWithoutExt && $dir$fileNameWithoutExt",
     }
 }
