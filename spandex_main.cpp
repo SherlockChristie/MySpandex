@@ -1,14 +1,16 @@
-#include "bit_utils.hpp"
+#include "consts.hpp"
 #include "blocks.hpp"
 #include "classes.hpp"
-#include "consts.hpp"
+#include "bit_utils.hpp"
+#include "msg_utils.hpp"
 // #include <vector>
 using namespace std;
 
-// std::vector<MSG> bus;
-// DEV cpu, gpu, acc;
-// TU tcpu, tgpu, tacc;
-// LLC llc;
+// 将下面几个设置为工程全局变量;
+std::vector<MSG> bus;
+DEV devs[MAX_DEVS];
+TU tus[MAX_DEVS];
+LLC llc;
 
 void case_init()
 {
@@ -31,11 +33,11 @@ int main()
     // no data_line/data_word needed;
 
     fig_a.Display();
-    
-    DEV *p = devs;
-    p+= ACC;
+
     devs[ACC].req_buf.push_back(fig_a);
-    tus[ACC].mapping_wrapper(p);
+    std::cout << "before" << std::endl;
+    tus[ACC].mapping_wrapper(devs[ACC]);
+    std::cout << "after" << std::endl;
     devs[ACC].req_buf.front().Display();
 
     return 0;

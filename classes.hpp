@@ -1,9 +1,7 @@
 #ifndef __CLASSES_HPP__
 #define __CLASSES_HPP__
 // TODO: 将部分属性改为private; 用继承优化类的实现;
-#include <cstdint> // For int, uint32_t etc.
-#include <cmath>
-#include <vector>
+#include "headers.hpp"
 #include "consts.hpp"
 #include "blocks.hpp"
 using namespace std;
@@ -120,7 +118,7 @@ public:
     // void rcv_fwd(id_num_t &reqor_id, MSG &fwd_in, word_offset_t offset, DATA_LINE &dev_line);
     // void rcv_fwd_word(id_num_t &reqor_id, DEV &owner_dev, MSG &fwd_in);
     // void rcv_fwd_line(id_num_t &reqor_id, DEV &owner_dev, MSG &fwd_in);
-    void rcv_fwd_single(id_num_t &reqor_id, MSG &fwd_in, unsigned long offset, DATA_LINE &dev_line);
+    void rcv_fwd_single(id_num_t &reqor_id, MSG &fwd_in, unsigned long offset);
     void rcv_fwd(id_num_t &reqor_id, DEV &owner_dev, MSG &fwd_in);
     // void tu_for_gpu();
     // void tu_for_acc();
@@ -192,11 +190,11 @@ public:
 //     void llc_lookup_in_mem(addr_t *addr, bool &evict);
 // };
 
-std::vector<MSG> bus;
-// DEV cpu, gpu, acc;
-// TU tcpu, tgpu, tacc;
-DEV devs[MAX_DEVS];
-TU tus[MAX_DEVS];
-LLC llc;
+// std::vector<MSG> bus;
+// // DEV cpu, gpu, acc;
+// // TU tcpu, tgpu, tacc;
+// DEV devs[MAX_DEVS];
+// TU tus[MAX_DEVS];
+// LLC llc;
 
 #endif // __CLASSES_HPP__

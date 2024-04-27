@@ -51,7 +51,6 @@
         "ctime": "cpp",
         "ratio": "cpp",
         "mutex": "cpp",
-        "thread": "cpp",
-        "vector": "cpp"
+        "thread": "cpp"
     }
 }

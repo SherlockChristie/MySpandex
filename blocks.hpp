@@ -1,9 +1,7 @@
 #ifndef __BLOCKS_HPP__
 #define __BLOCKS_HPP__
 
-#include <cstdint> // For int, uint32_t etc.
-// #include <cmath>
-#include <bitset>
+#include "headers.hpp"
 #include "consts.hpp"
 using namespace std;
 
