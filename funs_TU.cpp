@@ -5,6 +5,13 @@
 #include "msg_utils.hpp"
 using namespace std;
 
+extern LLC llc;
+
+// void TU::tst()
+// {
+//     printf("OK tst\n");
+// }
+
 // void TU::msg_init()
 // {
 //     for (int i = 0; i < MAX_DEVS; i++)
@@ -100,7 +107,7 @@ void TU::req_mapping(unsigned long id, MSG &dev_req)
     }
     // else gen.mask = dev_req.mask;
     gen.ok_mask = ~gen.mask;
-    tus[id].req_buf.push_back(gen);
+    req_buf.push_back(gen);
 }
 
 void TU::state_mapping(unsigned long id, DATA_LINE &data_line, DATA_WORD &data_word)
@@ -153,6 +160,8 @@ void TU::state_mapping(unsigned long id, DATA_LINE &data_line, DATA_WORD &data_w
 void TU::mapping_wrapper(DEV &dev)
 {
     unsigned long id = tu_id.to_ulong();
+    // dev.breakdown(dev.req_buf.front().addr);
+    // dev.fetch_line();
     req_mapping(id, dev.req_buf.front());
     state_mapping(id, dev.dev_line, dev.dev_word);
     // dev.req_buf.erase(req_buf.begin());

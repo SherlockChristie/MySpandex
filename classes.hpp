@@ -72,7 +72,7 @@ public:
     // // 同一时间内一个设备最多向MAX_DEVS-1(自己)个目标发送请求;
     // // 尽管如此，数组大小也仍应该是MAX_DEVS而非MAX_DEVS-1，因为req[id]中的id对应谁是固定的;
     // // 数组下标代表引起此req的src，req.dest代表此req的目标（总是假定不会同时发送）;
-    // std::vector<MSG> rsp_buf;
+    std::vector<MSG> rsp_buf;
     DEV_ADDR dev_addr;
     DATA_LINE dev_line;
     DATA_WORD dev_word;
@@ -112,7 +112,8 @@ public:
     DATA_WORD tu_word;
 
     // void msg_init();
-    void req_mapping(unsigned long id, MSG &req);
+    void tst();
+    void req_mapping(unsigned long id, MSG &dev_req);
     void state_mapping(unsigned long id, DATA_LINE &data_line, DATA_WORD &data_word);
     void mapping_wrapper(DEV &dev);
     // void rcv_fwd(id_num_t &reqor_id, MSG &fwd_in, word_offset_t offset, DATA_LINE &dev_line);

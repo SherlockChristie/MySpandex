@@ -1,6 +1,9 @@
 #include "classes.hpp"
 #include "bit_utils.hpp"
+#include "msg_utils.hpp"
 // 分开写函数的作用在于不用重复breakdown和fetch_line;
+
+extern std::vector<MSG> bus;
 
 // void LLC::msg_init()
 // {

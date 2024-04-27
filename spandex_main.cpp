@@ -1,3 +1,4 @@
+#include "headers.hpp"
 #include "consts.hpp"
 #include "blocks.hpp"
 #include "classes.hpp"
@@ -35,10 +36,13 @@ int main()
     fig_a.Display();
 
     devs[ACC].req_buf.push_back(fig_a);
-    std::cout << "before" << std::endl;
-    tus[ACC].mapping_wrapper(devs[ACC]);
-    std::cout << "after" << std::endl;
-    devs[ACC].req_buf.front().Display();
+    // tus[ACC].tst();
+    tus[ACC].req_mapping(ACC,fig_a);
+    // Yeah!!!!!!!!!!!!!!!!!!
+    // tus[ACC].mapping_wrapper(devs[ACC]);
+    // tus[ACC].mapping_wrapper(*(devs[ACC]));
+    // std::cout << "after" << std::endl;
+    // devs[ACC].req_buf.front().Display();
 
     return 0;
 }
