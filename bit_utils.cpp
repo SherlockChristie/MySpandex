@@ -1,6 +1,7 @@
 #include "bit_utils.hpp"
 
 void LineCopy(line_t &dest, const line_t &src)
+// void LineCopy(line_t *dest, const line_t &src)
 {
     std::memcpy(dest, src, sizeof(line_t));
 }
@@ -89,7 +90,7 @@ void WordIns(DATA_WORD &word, DATA_LINE &line, unsigned long offset)
         // if (word.state == DEV_O || word.state == LLC_O)
         // won't have problem since both DEV_O and LLC_O are 2;
         // bool is_dev not needed;
-        line.line_state.set(offset);
+        line.word_state.set(offset);
     else
         line.line_state = word.state;
     // 行状态等同于字状态;
@@ -104,7 +105,9 @@ void WordExt(DATA_WORD &word, DATA_LINE &line, unsigned long offset)
         word.data[i] = line.data[byte_off];
         byte_off++;
     }
-    if (line.line_state.test(offset))
+    // if (line.line_state.test(offset))
+    if (line.word_state.test(offset))
+    // word_state!!!!! not line_state!!!!!
         word.state = SPX_O;
     else
     {

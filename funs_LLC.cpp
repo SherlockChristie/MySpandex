@@ -1,3 +1,4 @@
+// #include "headers.hpp"
 #include "classes.hpp"
 #include "bit_utils.hpp"
 #include "msg_utils.hpp"
@@ -67,6 +68,15 @@ bool LLC::fetch_line()
     }
 }
 
+// 假设是原子的，fetch_line 与 back_line 之间不会有其他操作来修改此内存行;
+void LLC::back_line(DATA_LINE &llc_data)
+{
+    unsigned long llc_index = (llc_addr.index).to_ulong();
+    line_state_buf[llc_index] = llc_data.line_state;
+    word_state_buf[llc_index] = llc_data.word_state;
+    sharers_buf[llc_index] = llc_data.sharers;
+}
+
 // not needed
 // void LLC::dev_lookup_in_llc(addr_t dev_addr)
 // {
@@ -91,7 +101,7 @@ bool LLC::fetch_line()
 //     }
 // };
 
-void LLC::rcv_req_single(id_num_t &tu_id, MSG &tu_req, unsigned long offset, DATA_LINE &llc_data)
+void LLC::rcv_req_single(id_num_t tu_id, MSG &tu_req, unsigned long offset, DATA_LINE &llc_data)
 // Behaviour when LLC receives an external request from TU (Table III).
 {
     MSG gen;
@@ -101,8 +111,10 @@ void LLC::rcv_req_single(id_num_t &tu_id, MSG &tu_req, unsigned long offset, DAT
     // fetch_line(llc_addr, llc_data);
     // msg_init();
 
-    unsigned long id = tu_id.to_ulong();
-    gen.dest.set(id);
+    unsigned long id_int = tu_id.to_ulong();
+    gen.id = tu_req.id;
+    gen.dest.set(id_int);
+    // cout<<"dest ok "<<offset<<endl;
     // Default destination: the requestor.
     // gen.mask.set(offset.to_ulong());
     gen.addr = tu_req.addr;
@@ -110,6 +122,7 @@ void LLC::rcv_req_single(id_num_t &tu_id, MSG &tu_req, unsigned long offset, DAT
     gen.gran = GRAN_WORD;
     // Default LLC granularity: word.
     gen.mask.set(offset);
+    // cout<<"mask ok"<<endl;
     // Default mask.
     gen.data_line = llc_data;
     gen.data_word = data;
@@ -147,8 +160,9 @@ void LLC::rcv_req_single(id_num_t &tu_id, MSG &tu_req, unsigned long offset, DAT
         case REQ_S:
             // REQS2 not used;
             {
-                llc_data.sharers.set(tu_id.to_ulong()); // Update the sharers list.
-                if (data.state == SPX_S)                // REQS1;
+                llc_data.sharers.set(id_int); // Update the sharers list.
+                // cout<<"sharers ok"<<endl;
+                if (data.state == SPX_S) // REQS1;
                 {
                     // no blocking state to S;
                     data.state = SPX_S;
@@ -275,7 +289,8 @@ void LLC::rcv_req_single(id_num_t &tu_id, MSG &tu_req, unsigned long offset, DAT
             if (data.state == SPX_O)
             {
                 gen.dest.set(FindOwner(llc_data).to_ulong());
-                if (gen.dest.test(id))
+                // cout<<"dest.test ok"<<endl;
+                if (gen.dest.test(id_int))
                 {
                     data.state == SPX_V;
                     gen.msg = RSP_WB_ACK;
@@ -301,11 +316,13 @@ void LLC::rcv_req_single(id_num_t &tu_id, MSG &tu_req, unsigned long offset, DAT
     }
 
     WordIns(data, llc_data, offset);
+    back_line(llc_data);
+    // std::cout << word_state_buf[0xCF] << std::endl;
     // Save changed word data state back;
-    bus.push_back(gen);
+    rsp_buf.push_back(gen);
 }
 
-// void LLC::rcv_req_word(id_num_t &tu_id, MSG &tu_req)
+// void LLC::rcv_req_word(id_num_t tu_id, MSG &tu_req)
 // // Behaviour when LLC receives an external request from TU (Table III).
 // {
 //     breakdown(tu_req.addr);
@@ -322,11 +339,16 @@ void LLC::rcv_req_single(id_num_t &tu_id, MSG &tu_req, unsigned long offset, DAT
 
 // NOTE: Word granularity doesn;t mean that it only have req for one word in a line;
 // It may be a single multi-word request with a bitmask!!!!!!!!!!!!!!!!!!!!!
-void LLC::rcv_req(id_num_t &tu_id, MSG &tu_req)
+void LLC::rcv_req(id_num_t tu_id, MSG &tu_req)
 // LLC is always word granularity; if receive a line granularity request, breakdown into word granularity;
 {
     breakdown(tu_req.addr);
     fetch_line();
+    // cout << fetch_line() << endl;
+    // for (int i = BYTES_PER_WORD * WORDS_PER_LINE - 1; i >= 0; i--)
+    // {
+    //     printf("%x ", llc_line.data[i]);
+    // }
     // msg_init();
 
     // if (llc_data.word_state.any())
@@ -336,10 +358,14 @@ void LLC::rcv_req(id_num_t &tu_id, MSG &tu_req)
     {
         if (tu_req.mask.test(i))
         {
+            // cout<<"rcv_req ok "<< i << endl;
             rcv_req_single(tu_id, tu_req, i, llc_line);
         }
         // rsp_buf.push_back(rcv_req(tu_id, tu_req, bitset<WORDS_OFF>(i), llc_data));
     }
+    // rsp 不需要 ok_mask;
+    MsgCoalesce(rsp_buf);
+    put_rsp(rsp_buf);
     req_buf.pop_back();
     //}
     // else // the whole line only have 1 rsp;
@@ -368,12 +394,12 @@ void LLC::rcv_rsp(MSG &rsp_in)
     }
 }
 
-void LLC::solve_pending_ReqWB(id_num_t &tu_id)
+void LLC::solve_pending_ReqWB(id_num_t tu_id)
 {
     MSG gen = req_buf.front();
     gen.msg = RSP_NACK; // 撤销此请求，不再是所有者;
-    unsigned long id = tu_id.to_ulong();
-    gen.dest.set(id);
+    unsigned long id_int = tu_id.to_ulong();
+    gen.dest.set(id_int);
 
     req_buf.erase(req_buf.begin()); // pop out llc's ReqWB;
     bus.push_back(gen);             // bus to pop out tu's ReqWB;

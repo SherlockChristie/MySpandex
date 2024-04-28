@@ -146,17 +146,18 @@ public:
     // void msg_init();
     void breakdown(addr_t addr);
     bool fetch_line();
+    void back_line(DATA_LINE &llc_data);
     // id_bit_t FindOwner(DATA_LINE &llc_data);
-    // void rcv_req(id_num_t &tu_id, MSG &tu_req, word_offset_t offset, DATA_LINE &llc_data);
-    // void rcv_req_word(id_num_t &tu_id, MSG &tu_req);
-    // void rcv_req_line(id_num_t &tu_id, MSG &tu_req);
-    void rcv_req_single(id_num_t &tu_id, MSG &tu_req, unsigned long offset, DATA_LINE &llc_data);
-    void rcv_req(id_num_t &tu_id, MSG &tu_req);
+    // void rcv_req(id_num_t tu_id, MSG &tu_req, word_offset_t offset, DATA_LINE &llc_data);
+    // void rcv_req_word(id_num_t tu_id, MSG &tu_req);
+    // void rcv_req_line(id_num_t tu_id, MSG &tu_req);
+    void rcv_req_single(id_num_t tu_id, MSG &tu_req, unsigned long offset, DATA_LINE &llc_data);
+    void rcv_req(id_num_t tu_id, MSG &tu_req);
     void rcv_rsp(MSG &rsp_in);
     // void rcv_rsp_line(MSG &rsp_in);
     // void snd_req();
     // void snd_rsp();
-    void solve_pending_ReqWB(id_num_t &tu_id);
+    void solve_pending_ReqWB(id_num_t tu_id);
 };
 
 // class LLC_ADDR

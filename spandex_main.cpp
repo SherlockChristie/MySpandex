@@ -16,12 +16,26 @@ LLC llc;
 void case_init()
 {
     // Fig 1(a);
+
+    line_t data_CF = {0x00, 0x66, 0xCF, 0xCF, 0x01, 0x66, 0xCF, 0xCF, 0x10, 0x66, 0xCF, 0xCF, 0x11, 0x66, 0xCF, 0xCF};
+    LineCopy(llc.cache[0xCF], data_CF);
+    llc.line_state_buf[0xCF] = LLC_V;
+    llc.tag_buf[0xCF] = 0x19B; // 0b 0110_0110_11 -> 01_1001_1011
 }
 
 int main()
 {
     // init;
     // reset;
+
+    case_init();
+    // line_t data_CF = {0x00, 0x66, 0xCF, 0xCF, 0x01, 0x66, 0xCF, 0xCF, 0x10, 0x66, 0xCF, 0xCF, 0x11, 0x66, 0xCF, 0xCF};
+    // LineCopy(llc.cache[0xCF], data_CF);
+    for (int i = BYTES_PER_WORD * WORDS_PER_LINE - 1; i >= 0; i--)
+    {
+        printf("%x ", llc.cache[0xCF][i]);
+    }
+    // cout << endl;
 
     MSG fig_a;
     fig_a.id = 1;
@@ -33,16 +47,21 @@ int main()
     // u_state/retry_times determined in ?;
     // no data_line/data_word needed;
 
-    fig_a.Display();
+    fig_a.msg_display();
 
     devs[ACC].req_buf.push_back(fig_a);
-    // tus[ACC].tst();
-    tus[ACC].req_mapping(ACC,fig_a);
-    // Yeah!!!!!!!!!!!!!!!!!!
-    // tus[ACC].mapping_wrapper(devs[ACC]);
-    // tus[ACC].mapping_wrapper(*(devs[ACC]));
-    // std::cout << "after" << std::endl;
-    // devs[ACC].req_buf.front().Display();
+    tus[ACC].req_mapping(ACC, fig_a);
 
+    MSG mapped = tus[ACC].req_buf.front();
+    mapped.msg_display();
+    // bus.front().msg_display();
+    get_msg();
+    // llc.req_buf.front().msg_display();
+    llc.rcv_req(bitset<MAX_DEVS_BITS>(ACC), mapped);
+
+    bus.front().msg_display();
+
+    cout << "ok" << endl;
+    // cout<<llc.word_state_buf[0xCF]<< endl;
     return 0;
 }

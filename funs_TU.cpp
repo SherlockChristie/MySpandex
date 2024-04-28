@@ -6,6 +6,7 @@
 using namespace std;
 
 extern LLC llc;
+extern std::vector<MSG> bus;
 
 // void TU::tst()
 // {
@@ -108,6 +109,7 @@ void TU::req_mapping(unsigned long id, MSG &dev_req)
     // else gen.mask = dev_req.mask;
     gen.ok_mask = ~gen.mask;
     req_buf.push_back(gen);
+    bus.push_back(gen);
 }
 
 void TU::state_mapping(unsigned long id, DATA_LINE &data_line, DATA_WORD &data_word)

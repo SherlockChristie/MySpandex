@@ -1,6 +1,8 @@
 #ifndef __BLOCKS_HPP__
 #define __BLOCKS_HPP__
 
+// TODO: msg.display() 不显示数字而显示字符串;
+
 #include "headers.hpp"
 #include "consts.hpp"
 using namespace std;
@@ -58,7 +60,7 @@ struct DATA_LINE
     spx_word_state_t word_state;
     id_bit_t sharers;
 
-    void Display()
+    void line_display()
     {
         std::cout << "  DATA_LINE display" << std::endl;
         std::cout << "  data: ";
@@ -86,7 +88,7 @@ struct DATA_WORD
     // DeNovo do the same with Spandex;
     // GPU coh. does not have state S or O;
 
-    void Display()
+    void word_display()
     {
         std::cout << "  DATA_WORD display" << std::endl;
         std::cout << "  data: ";
@@ -121,7 +123,7 @@ struct MSG
     DATA_WORD data_word;
     int retry_times;
 
-    void Display()
+    void msg_display()
     {
         std::cout << "Message info display" << std::endl;
         std::cout << "id: " << id << std::endl;
@@ -135,10 +137,10 @@ struct MSG
             std::cout << "gran: word" << std::endl;
         std::cout << "ok_mask: " << ok_mask << std::endl;
         std::cout << "u_state: " << u_state << std::endl;
-        data_line.Display();
-        data_word.Display();
+        data_line.line_display();
+        data_word.word_display();
         std::cout << "retry_times: " << retry_times << std::endl;
-        std::cout << "Message info display end" << std::endl;
+        std::cout << "Message info display end" << std::endl << std::endl;
     }
 };
 
