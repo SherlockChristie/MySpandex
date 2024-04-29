@@ -259,6 +259,7 @@ void LLC::rcv_req_single(MSG &tu_req, unsigned long offset, DATA_LINE &llc_data)
             else if (data.state == SPX_V)
             {
                 gen.msg = RSP_WTdata;
+                WordExt(data, tu_req.data_line, offset);
             }
             else if (data.state == SPX_S)
             {
@@ -303,7 +304,7 @@ void LLC::rcv_req_single(MSG &tu_req, unsigned long offset, DATA_LINE &llc_data)
             {
                 if (tu_req.src == FindOwner(llc_data))
                 {
-                    data.state == SPX_V;
+                    data.state = SPX_V;
                     gen.msg = RSP_WB_ACK;
                 }
                 else
@@ -350,62 +351,77 @@ void LLC::rcv_req_single(MSG &tu_req, unsigned long offset, DATA_LINE &llc_data)
 //     rcv_req(tu_id, tu_req, tu_req.offset, llc_line);
 // }
 
+void LLC::rcv_req_inner(MSG &tu_req, int k)
+{
+    breakdown(tu_req.addr);
+    fetch_line();
+
+    // if (llc_data.word_state.any())
+    // // if any word in O, rsp may be different for each word;
+    // {
+    for (int i = 0; i < WORDS_PER_LINE; i++)
+    {
+        if (tu_req.mask.test(i))
+        {
+            // cout<<"rcv_req ok "<< i << endl;
+            rcv_req_single(tu_req, i, llc_line);
+        }
+        // rsp_buf.push_back(rcv_req(tu_id, tu_req, bitset<WORDS_OFF>(i), llc_data));
+    }
+    // rsp 不需要 ok_mask;
+    RspCoalesce(rsp_buf);
+    bool is_rsp = 0;
+    for (int i = 0; i < rsp_buf.size(); i++)
+    {
+        if (rsp_buf[i].id == req_buf.back().id)
+        {
+            req_buf.erase(req_buf.begin() + k);
+            cout << "LLC put rsp to bus---" << endl;
+            is_rsp = 1;
+            break;
+        }
+    }
+    if (!is_rsp) // 对于 rsp 和 fwd 都有的情况，req_buf也已经出队了;
+        cout << "LLC put a fwd to bus---" << endl;
+    put_rsp(rsp_buf);
+    //}
+    // else // the whole line only have 1 rsp;
+    // {
+    //     MSG gen_line;
+    //     gen_line = rcv_req(tu_id, tu_req, 0, llc_data);
+    //     gen_line.gran = GRAN_LINE;
+    //     llc_data.line_state =
+    // }
+}
+
 // NOTE: Word granularity doesn;t mean that it only have req for one word in a line;
 // It may be a single multi-word request with a bitmask!!!!!!!!!!!!!!!!!!!!!
 void LLC::rcv_req()
 // LLC is always word granularity; if receive a line granularity request, breakdown into word granularity;
 {
+    int old_unstable = 0;
     int len = req_buf.size() - 1;
+    cout << "REQ BUF LEN A: " << len + 1 << endl;
     for (int k = len; k >= 0; k--)
     {
-        if (req_buf[k].u_state.any())
-            break;
+        // MSG tu_req = req_buf[k];
+        // 不能这样。 这样相当于拷贝了一个 req_buf[k] 的副本，没能更改 req_buf[k] 的 u_state;
+        // 使用引用，tu_req 成为 req_buf[k] 的别名;
+        MSG &tu_req = req_buf[k];
+        if (tu_req.u_state.any())
+        {
+            old_unstable++;
+        }
         else // u_state = 0000;
         {
-            // MSG tu_req = req_buf[k];
-            // 不能这样。 这样相当于拷贝了一个 req_buf[k] 的副本，没能更改 req_buf[k] 的 u_state;
-            MSG& tu_req = req_buf[k];
-            // 使用引用，tu_req 成为 req_buf[k] 的别名;
-            breakdown(tu_req.addr);
-            fetch_line();
-
-            // if (llc_data.word_state.any())
-            // // if any word in O, rsp may be different for each word;
-            // {
-            for (int i = 0; i < WORDS_PER_LINE; i++)
-            {
-                if (tu_req.mask.test(i))
-                {
-                    // cout<<"rcv_req ok "<< i << endl;
-                    rcv_req_single(tu_req, i, llc_line);
-                }
-                // rsp_buf.push_back(rcv_req(tu_id, tu_req, bitset<WORDS_OFF>(i), llc_data));
-            }
-            // rsp 不需要 ok_mask;
-            MsgCoalesce(rsp_buf);
-            bool is_rsp = 0;
-            for (int i = 0; i < rsp_buf.size(); i++)
-            {
-                if (rsp_buf[i].id == req_buf.back().id)
-                {
-                    req_buf.pop_back();
-                    cout << "LLC put rsp to bus---" << endl;
-                    is_rsp = 1;
-                    break;
-                }
-            }
-            if (!is_rsp)
-                cout << "LLC put a fwd to bus---" << endl;
-            put_rsp(rsp_buf);
-            //}
-            // else // the whole line only have 1 rsp;
-            // {
-            //     MSG gen_line;
-            //     gen_line = rcv_req(tu_id, tu_req, 0, llc_data);
-            //     gen_line.gran = GRAN_LINE;
-            //     llc_data.line_state =
-            // }
+            rcv_req_inner(tu_req, k);
         }
+    }
+    // 先从后往前处理新入队的，如果新入队的操作使得阻塞状态变为非阻塞状态了，再次处理阻塞状态的req;
+    cout << "Old_unstable count: " << old_unstable << endl;
+    for (int i = 0; i < old_unstable; i++)
+    {
+        rcv_req_inner(req_buf[i], i);
     }
 }
 

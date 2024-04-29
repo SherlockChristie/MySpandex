@@ -153,6 +153,7 @@ public:
     // void rcv_req_word(id_num_t tu_id, MSG &tu_req);
     // void rcv_req_line(id_num_t tu_id, MSG &tu_req);
     void rcv_req_single(MSG &tu_req, unsigned long offset, DATA_LINE &llc_data);
+    void rcv_req_inner(MSG &tu_req, int k);
     void rcv_req();
     void rcv_rsp(MSG &rsp_in);
     // void rcv_rsp_line(MSG &rsp_in);

@@ -36,6 +36,12 @@ int find_conflict(std::vector<MSG> &req_buf)
     return 0;
 }
 
+// bool is_unstable_ok(MSG req)
+// {
+
+//     return 0;
+// }
+
 void rcv_rsp_single(MSG &rsp_in, unsigned long offset, DATA_LINE &data_line)
 {
     DATA_WORD data;
@@ -245,7 +251,7 @@ void put_rsp(std::vector<MSG> &rsp)
 //     return 0;
 // }
 
-void MsgCoalesce(std::vector<MSG> &buf)
+void RspCoalesce(std::vector<MSG> &buf)
 {
     int len = buf.size();
     for (int i = 0; i < len - 1; i++)

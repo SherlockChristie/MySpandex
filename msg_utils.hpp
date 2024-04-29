@@ -51,7 +51,7 @@ void put_rsp(std::vector<MSG> &rsp);
 //     return 0;
 // }
 
-void MsgCoalesce(std::vector<MSG> &buf);
+void RspCoalesce(std::vector<MSG> &buf);
 void buf_inner(std::vector<MSG> &buf);
 void buf_display();
 

@@ -267,7 +267,7 @@ void TU::rcv_fwd_single(MSG &fwd_in, unsigned long offset)
     DATA_WORD data;
     WordExt(data, tu_line, offset);
 
-    MSG gen_reqor, gen_llc;
+    MSG gen_reqor, gen_llc, gen_req;
     // Send rsp for only LLC if RvkO/Inv; otherwise send rsp fot both;
 
     gen_reqor.id = fwd_in.id;
@@ -287,6 +287,13 @@ void TU::rcv_fwd_single(MSG &fwd_in, unsigned long offset)
     gen_llc.dest.reset();                      // really important!!!!!!!!!!!!!!!!!!
     gen_llc.dest.set(SPX);                     // go to LLC;
     gen_llc.msg = RSP_FWD;                     // bus to pop out llc's FWD;
+
+    gen_req = fwd_in;
+    gen_req.id++;
+    gen_req.src = tu_id;
+    gen_req.dest.reset();
+    gen_req.dest.set(SPX);
+    gen_req.retry_times = 0;
 
     switch (fwd_in.msg)
     {
@@ -454,16 +461,14 @@ void TU::rcv_fwd_single(MSG &fwd_in, unsigned long offset)
             data.state = SPX_I;
             req_buf.pop_back();
 
-            // MSG tmp = fwd_in;
-            // tmp.id++;
-            // tmp.src = tu_id;
-            // tmp.dest.reset();
-            // tmp.dest.set(SPX);
-            // tmp.msg = REQ_WB;
-            // tmp.ok_mask = ~tmp.mask;
-            // tmp.retry_times = 0;
-            // req_buf.push_back(tmp);
-            // bus.push_back(tmp);
+            gen_req.msg = REQ_WB;
+            // TODO: 但是这样的话，会触发2次REQ_WB？
+            // 写一个 ReqCoalesce ？
+            req_buf.push_back(gen_req);
+            bus.push_back(gen_req);
+            cout << "TU_" << dev_which(tu_id.to_ulong()) << " put a req to bus---" << endl;
+            gen_req.msg_display();
+            buf_display();
         }
         rsp_buf.push_back(gen_llc);
         // no rsp_buf.push_back(gen_reqor);
@@ -574,7 +579,7 @@ void TU::rcv_fwd()
             rcv_fwd_single(fwd_in, i);
         }
     }
-    MsgCoalesce(rsp_buf);
+    RspCoalesce(rsp_buf);
     cout << "TU_" << dev_which(id) << " put rsp to bus---" << endl;
     put_rsp(rsp_buf);
 }

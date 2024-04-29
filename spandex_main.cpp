@@ -111,9 +111,6 @@ void init_b()
     // no need for a DEV req to determine dest; always LLC; determined in tu.req_mapping();
     Req_003.addr = 0x39C5BB;
     Req_003.msg = RMW;
-    // gran/ok_mask also determined in tu.req_mapping();
-    // u_state/retry_times determined in ?;
-    // no data_line/data_word needed;
     // Req_003.msg_display();
     // ------------------------------------
 }
@@ -122,7 +119,7 @@ void do_b()
 {
     init_b();
     int time = 0;
-    for (time = 1; time < 3; time++)
+    for (time = 1; time < 5; time++)
     {
         cout << "Timing: " << time << endl;
         if (time == 1)
@@ -132,18 +129,18 @@ void do_b()
         }
         get_msg(); // 上升沿get_msg();
         llc.rcv_req();
-        cout << "------ LLC TEST -------" << endl;
-        int len = llc.req_buf.size();
-        for (int i = 0; i < len; i++)
-        {
-            llc.req_buf[i].msg_display();
-        }
+        // cout << "------ LLC TEST -------" << endl;
+        // int len = llc.req_buf.size();
+        // for (int i = 0; i < len; i++)
+        // {
+        //     llc.req_buf[i].msg_display();
+        // }
         get_msg(); // 下降沿get_msg();
         tus[ACC].rcv_fwd();
     }
 }
 
-// Must
+// Must do a first if you want to go through c;
 void init_c()
 {
     // ------------- Fig 1(c) --------------
