@@ -252,14 +252,17 @@ void TU::mapping_wrapper(DEV &dev)
 void TU::rcv_fwd_single(MSG &fwd_in, unsigned long offset)
 {
     // MSG fwd_in = req_buf.front(); // pushed in req_mapping();
-    bool conflict_flag = is_conflict(req_buf, fwd_in);
+    int p = find_conflict(req_buf);
+    bool conflict_flag = 0;
     MSG pending;
-    if (conflict_flag)
+    if (p)
     {
-        pending = req_buf.front();
+        pending = req_buf[p];
+        conflict_flag = 1;
     }
 
-    req_buf.push_back(fwd_in);
+    // 已经在 get_msg() 中push in过了！！！
+    // req_buf.push_back(fwd_in);
 
     DATA_WORD data;
     WordExt(data, tu_line, offset);
@@ -281,6 +284,7 @@ void TU::rcv_fwd_single(MSG &fwd_in, unsigned long offset)
 
     gen_reqor.dest.set(fwd_in.src.to_ulong()); // go to reqor;
     gen_llc = gen_reqor;                       // Default items are the same except the dest.
+    gen_llc.dest.reset();                      // really important!!!!!!!!!!!!!!!!!!
     gen_llc.dest.set(SPX);                     // go to LLC;
     gen_llc.msg = RSP_FWD;                     // bus to pop out llc's FWD;
 
@@ -449,6 +453,17 @@ void TU::rcv_fwd_single(MSG &fwd_in, unsigned long offset)
             gen_llc.msg = RSP_RVK_O;
             data.state = SPX_I;
             req_buf.pop_back();
+
+            // MSG tmp = fwd_in;
+            // tmp.id++;
+            // tmp.src = tu_id;
+            // tmp.dest.reset();
+            // tmp.dest.set(SPX);
+            // tmp.msg = REQ_WB;
+            // tmp.ok_mask = ~tmp.mask;
+            // tmp.retry_times = 0;
+            // req_buf.push_back(tmp);
+            // bus.push_back(tmp);
         }
         rsp_buf.push_back(gen_llc);
         // no rsp_buf.push_back(gen_reqor);
@@ -538,11 +553,12 @@ void TU::rcv_fwd_single(MSG &fwd_in, unsigned long offset)
 
 void TU::rcv_fwd()
 {
-    MSG fwd_in = req_buf.front();
+    MSG fwd_in = req_buf.back();
     unsigned long id = tu_id.to_ulong();
     devs[id].breakdown(fwd_in.addr);
-    devs[id].fetch_line();
-    state_mapping(devs[id].dev_id.to_ulong(), devs[id].dev_line, devs[id].dev_word);
+    devs[id].dev_addr.addr_display();
+    cout << devs[id].fetch_line() << endl;
+    state_mapping(id, devs[id].dev_line, devs[id].dev_word);
 
     bool flag = 0; // 0 for O; 1 for V;
 
@@ -559,8 +575,8 @@ void TU::rcv_fwd()
         }
     }
     MsgCoalesce(rsp_buf);
+    cout << "TU_" << dev_which(id) << " put rsp to bus---" << endl;
     put_rsp(rsp_buf);
-    cout << "TU " << tu_id << " put rsp to bus---" << endl;
 }
 
 // void TU::rcv_fwd_cpu(id_num_t &reqor_id, MSG &fwd_in)

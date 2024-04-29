@@ -10,7 +10,7 @@
 // {
 // }
 
-bool is_conflict(std::vector<MSG> &req_buf, MSG &new_msg);
+int find_conflict(std::vector<MSG> &req_buf);
 void rcv_rsp_single(MSG &rsp_in, unsigned long offset, DATA_LINE &data_line);
 void get_rsp(MSG rsp, std::vector<MSG> &req_buf, id_num_t id);
 void get_msg();
@@ -52,6 +52,7 @@ void put_rsp(std::vector<MSG> &rsp);
 // }
 
 void MsgCoalesce(std::vector<MSG> &buf);
+void buf_inner(std::vector<MSG> &buf);
 void buf_display();
 
 #endif // MSG_UTILS_HPP

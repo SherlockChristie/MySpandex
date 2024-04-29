@@ -7,6 +7,8 @@
 // #include <vector>
 using namespace std;
 
+// TODO: 用 fetch_line() 和 back_line() 函数初始化而不是手动;
+
 // 将下面几个设置为工程全局变量;
 std::vector<MSG> bus;
 DEV devs[MAX_DEVS];
@@ -89,13 +91,18 @@ void init_b()
     // addr: 0x39C5BB = 0b 0011 1001 11/00 0101 1011 /10/11
 
     // Data init;
-    // line_t data_5B = {0x00, 0x39, 0xC5, 0xBB, 0x01, 0x39, 0xC5, 0xBB, 0x10, 0x39, 0xC5, 0xBB, 0x11, 0x39, 0xC5, 0xBB};
+    // LLC;
     line_t data_5B = {ACC, 0x00, 0x00, 0x00, ACC, 0x00, 0x00, 0x00, ACC, 0x00, 0x00, 0x00, ACC, 0x00, 0x00, 0x00};
     // Storing owners' id.
     LineCopy(llc.cache[0x5B], data_5B);
     llc.line_state_buf[0x5B] = LLC_V;
     llc.word_state_buf[0x5B].set(); // set all to O state;
     llc.tag_buf[0x5B] = 0xE7;       // 0b 0011_1001_11 -> 00_1110_0111
+    // ACC's cache;
+    line_t data_ACC = {0x00, 0x39, 0xC5, 0xBB, 0x01, 0x39, 0xC5, 0xBB, 0x10, 0x39, 0xC5, 0xBB, 0x11, 0x39, 0xC5, 0xBB};
+    LineCopy(devs[ACC].cache[0x1B], data_ACC);
+    devs[ACC].state_buf[0x1B] = DEV_O;
+    devs[ACC].tag_buf[0x1B] = 0xE71; // 0b 0011_1001_1100_01 -> 00_1110_0111_0001
 
     // Req init;
     // ReqWTdata;
@@ -115,7 +122,7 @@ void do_b()
 {
     init_b();
     int time = 0;
-    for (time = 1; time < 5; time++)
+    for (time = 1; time < 3; time++)
     {
         cout << "Timing: " << time << endl;
         if (time == 1)
@@ -125,6 +132,12 @@ void do_b()
         }
         get_msg(); // 上升沿get_msg();
         llc.rcv_req();
+        cout << "------ LLC TEST -------" << endl;
+        int len = llc.req_buf.size();
+        for (int i = 0; i < len; i++)
+        {
+            llc.req_buf[i].msg_display();
+        }
         get_msg(); // 下降沿get_msg();
         tus[ACC].rcv_fwd();
     }

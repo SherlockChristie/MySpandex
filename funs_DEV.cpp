@@ -12,7 +12,6 @@ void DEV::breakdown(addr_t addr)
 
 bool DEV::fetch_line()
 {
-    unsigned long id = dev_id.to_ulong();
     line_t zero = {0};
     unsigned long dev_index = (dev_addr.index).to_ulong();
     dev_line.line_state = state_buf[dev_index];

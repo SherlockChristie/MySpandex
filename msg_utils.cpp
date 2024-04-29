@@ -21,17 +21,19 @@ extern LLC llc;
 // {
 // }
 
-bool is_conflict(std::vector<MSG> &req_buf, MSG &new_msg)
+int find_conflict(std::vector<MSG> &req_buf)
 {
+    int len = req_buf.size() - 1; // 不包括新入队的req自身;
+    MSG new_msg = req_buf.back();
     if (!req_buf.empty())
     {
-        for (int i = 0; i < req_buf.size(); i++)
+        for (int i = 0; i < len; i++)
         {
             if (new_msg.addr == req_buf[i].addr)
-                return true;
+                return i;
         }
     }
-    return false;
+    return 0;
 }
 
 void rcv_rsp_single(MSG &rsp_in, unsigned long offset, DATA_LINE &data_line)

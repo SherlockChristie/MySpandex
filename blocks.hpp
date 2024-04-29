@@ -65,7 +65,7 @@ struct DATA_LINE
 
     void line_display()
     {
-        std::cout << "  DATA_LINE display" << std::endl;
+        std::cout << "  DATA_LINE_DISPLAY--------------------" << std::endl;
         std::cout << "  data: ";
         for (int i = BYTES_PER_WORD * WORDS_PER_LINE - 1; i >= 0; i--)
         {
@@ -75,7 +75,7 @@ struct DATA_LINE
         std::cout << "  line_state: " << line_state << std::endl;
         std::cout << "  word_state: " << word_state << std::endl;
         std::cout << "  sharers: " << sharers << std::endl;
-        std::cout << "  DATA_LINE display end" << std::endl;
+        std::cout << "  -------------------------------------" << std::endl;
     }
 };
 
@@ -93,7 +93,7 @@ struct DATA_WORD
 
     void word_display()
     {
-        std::cout << "  DATA_WORD display" << std::endl;
+        std::cout << "  DATA_WORD_DISPLAY--------------------" << std::endl;
         std::cout << "  data: ";
         for (int i = WORDS_PER_LINE - 1; i >= 0; i--)
         {
@@ -101,7 +101,7 @@ struct DATA_WORD
         }
         std::cout << std::endl;
         std::cout << "  state: " << state << std::endl;
-        std::cout << "  DATA_WORD display end" << std::endl;
+        std::cout << "  -------------------------------------" << std::endl;
     }
 };
 
@@ -110,7 +110,7 @@ struct MSG
     int id; // Every req/fwd has an unique id, rsp has an id same with its corrsponding rsp/fwd.
     // LSB 00:line/word0?
     mask_t mask;   // if all the line is ready;
-    id_num_t src; // self number;
+    id_num_t src;  // self number;
     id_bit_t dest; // Destination"s" of the request;
     addr_t addr;   // Used when it needs data instead of just ownership.
     int msg;
@@ -125,7 +125,7 @@ struct MSG
     // Store the transient states in the req that triggers it instead of the LLC self.
     DATA_LINE data_line;
     DATA_WORD data_word;
-    int retry_times=0;
+    int retry_times = 0;
 
     void msg_display()
     {
@@ -181,6 +181,16 @@ struct DEV_ADDR
     dev_index_t index;
     word_offset_t w_off;
     byte_offset_t b_off;
+
+    void addr_display()
+    {
+        std::cout << "  DEV_ADDR_DISPLAY---------------------" << std::endl;
+        std::cout << "  tag: " << tag << std::endl;
+        std::cout << "  index: " << index << std::endl;
+        std::cout << "  word_offset: " << w_off << std::endl;
+        std::cout << "  byte_offset_t: " << b_off << std::endl;
+        std::cout << "  -------------------------------------" << std::endl;
+    }
 };
 
 struct LLC_ADDR
@@ -189,6 +199,16 @@ struct LLC_ADDR
     llc_index_t index;
     word_offset_t w_off;
     byte_offset_t b_off;
+
+    void addr_display()
+    {
+        std::cout << "  LLC_ADDR_DISPLAY---------------------" << std::endl;
+        std::cout << "  tag: " << tag << std::endl;
+        std::cout << "  index: " << index << std::endl;
+        std::cout << "  word_offset: " << w_off << std::endl;
+        std::cout << "  byte_offset_t: " << b_off << std::endl;
+        std::cout << "  -------------------------------------" << std::endl;
+    }
 };
 
 #endif // __BLOCKS_HPP__

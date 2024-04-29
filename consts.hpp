@@ -105,6 +105,7 @@ constexpr int lg2(int x)
 // 4, not 6;
 
 // Device Transient states
+// 0 for stable;
 #define DEV_IV 1
 #define DEV_II 2
 #define DEV_OI 3
@@ -133,6 +134,7 @@ constexpr int lg2(int x)
 #define SPX_S 3
 
 /// LLC unstable states
+// 0 for stable;
 #define LLC_IV 1
 #define LLC_IS 2
 #define LLC_IO 3

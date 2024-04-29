@@ -105,7 +105,7 @@ void LLC::back_line(DATA_LINE &llc_data)
 void LLC::rcv_req_single(MSG &tu_req, unsigned long offset, DATA_LINE &llc_data)
 // Behaviour when LLC receives an external request from TU (Table III).
 {
-    MSG gen;
+    MSG gen, llc_req;
     DATA_WORD data;
     WordExt(data, llc_data, offset);
     // breakdown(llc_addr, tu_req.addr);
@@ -208,7 +208,8 @@ void LLC::rcv_req_single(MSG &tu_req, unsigned long offset, DATA_LINE &llc_data)
             else if (data.state == SPX_S)
             {
                 tu_req.u_state = LLC_SV; // go to blocking states;
-                // wait();
+                                         // wait();
+                gen.id++;
                 gen.msg = FWD_INV;
                 gen.dest = InvSharers(llc_data.sharers, SPX);
             }
@@ -233,6 +234,7 @@ void LLC::rcv_req_single(MSG &tu_req, unsigned long offset, DATA_LINE &llc_data)
             {
                 tu_req.u_state = LLC_SO; // go to blocking states;
                 // wait();
+                gen.id++;
                 gen.msg = FWD_INV;
                 gen.dest = InvSharers(llc_data.sharers, SPX);
             }
@@ -247,6 +249,7 @@ void LLC::rcv_req_single(MSG &tu_req, unsigned long offset, DATA_LINE &llc_data)
         {
             if (data.state == SPX_O)
             {
+                gen.id++; // 如果是LLC自己的请求，应该增加id数?
                 gen.msg = FWD_RVK_O;
                 gen.dest.reset();
                 gen.dest.set(FindOwner(llc_data).to_ulong());
@@ -262,6 +265,7 @@ void LLC::rcv_req_single(MSG &tu_req, unsigned long offset, DATA_LINE &llc_data)
                 // go to blocking states;
                 tu_req.u_state = LLC_SV;
                 // wait();
+                gen.id++;
                 gen.msg = FWD_INV;
                 gen.dest = InvSharers(llc_data.sharers, SPX);
             }
@@ -287,6 +291,7 @@ void LLC::rcv_req_single(MSG &tu_req, unsigned long offset, DATA_LINE &llc_data)
                 // go to blocking states;
                 tu_req.u_state = LLC_SO;
                 // wait();
+                gen.id++;
                 gen.msg = FWD_INV;
                 gen.dest = InvSharers(llc_data.sharers, SPX);
             }
@@ -313,6 +318,7 @@ void LLC::rcv_req_single(MSG &tu_req, unsigned long offset, DATA_LINE &llc_data)
                 // go to blocking states;
                 tu_req.u_state = LLC_SV;
                 // wait();
+                gen.id++;
                 gen.msg = FWD_INV;
                 gen.dest = InvSharers(llc_data.sharers, SPX);
             }
@@ -349,41 +355,58 @@ void LLC::rcv_req_single(MSG &tu_req, unsigned long offset, DATA_LINE &llc_data)
 void LLC::rcv_req()
 // LLC is always word granularity; if receive a line granularity request, breakdown into word granularity;
 {
-    MSG tu_req = req_buf.front();
-    breakdown(tu_req.addr);
-    fetch_line();
-    // cout << fetch_line() << endl;
-    // for (int i = BYTES_PER_WORD * WORDS_PER_LINE - 1; i >= 0; i--)
-    // {
-    //     printf("%x ", llc_line.data[i]);
-    // }
-    // msg_init();
-
-    // if (llc_data.word_state.any())
-    // // if any word in O, rsp may be different for each word;
-    // {
-    for (int i = 0; i < WORDS_PER_LINE; i++)
+    int len = req_buf.size() - 1;
+    for (int k = len; k >= 0; k--)
     {
-        if (tu_req.mask.test(i))
+        if (req_buf[k].u_state.any())
+            break;
+        else // u_state = 0000;
         {
-            // cout<<"rcv_req ok "<< i << endl;
-            rcv_req_single(tu_req, i, llc_line);
+            // MSG tu_req = req_buf[k];
+            // 不能这样。 这样相当于拷贝了一个 req_buf[k] 的副本，没能更改 req_buf[k] 的 u_state;
+            MSG& tu_req = req_buf[k];
+            // 使用引用，tu_req 成为 req_buf[k] 的别名;
+            breakdown(tu_req.addr);
+            fetch_line();
+
+            // if (llc_data.word_state.any())
+            // // if any word in O, rsp may be different for each word;
+            // {
+            for (int i = 0; i < WORDS_PER_LINE; i++)
+            {
+                if (tu_req.mask.test(i))
+                {
+                    // cout<<"rcv_req ok "<< i << endl;
+                    rcv_req_single(tu_req, i, llc_line);
+                }
+                // rsp_buf.push_back(rcv_req(tu_id, tu_req, bitset<WORDS_OFF>(i), llc_data));
+            }
+            // rsp 不需要 ok_mask;
+            MsgCoalesce(rsp_buf);
+            bool is_rsp = 0;
+            for (int i = 0; i < rsp_buf.size(); i++)
+            {
+                if (rsp_buf[i].id == req_buf.back().id)
+                {
+                    req_buf.pop_back();
+                    cout << "LLC put rsp to bus---" << endl;
+                    is_rsp = 1;
+                    break;
+                }
+            }
+            if (!is_rsp)
+                cout << "LLC put a fwd to bus---" << endl;
+            put_rsp(rsp_buf);
+            //}
+            // else // the whole line only have 1 rsp;
+            // {
+            //     MSG gen_line;
+            //     gen_line = rcv_req(tu_id, tu_req, 0, llc_data);
+            //     gen_line.gran = GRAN_LINE;
+            //     llc_data.line_state =
+            // }
         }
-        // rsp_buf.push_back(rcv_req(tu_id, tu_req, bitset<WORDS_OFF>(i), llc_data));
     }
-    // rsp 不需要 ok_mask;
-    MsgCoalesce(rsp_buf);
-    cout << "LLC put rsp to bus---" << endl;
-    req_buf.pop_back();
-    put_rsp(rsp_buf);
-    //}
-    // else // the whole line only have 1 rsp;
-    // {
-    //     MSG gen_line;
-    //     gen_line = rcv_req(tu_id, tu_req, 0, llc_data);
-    //     gen_line.gran = GRAN_LINE;
-    //     llc_data.line_state =
-    // }
 }
 
 // rcv_rsp_single can be used in any dev, go to bit_utils.hpp;
