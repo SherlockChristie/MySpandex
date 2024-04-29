@@ -27,6 +27,7 @@ void get_msg();
 //         // all req stays at the vector until its rsp in;
 //     }
 // }
+// void put_rsp(int id);
 void put_rsp(std::vector<MSG> &rsp);
 // void get_req(std::vector<MSG> &req)
 // // get a req, insert it in req_buf;
@@ -51,5 +52,6 @@ void put_rsp(std::vector<MSG> &rsp);
 // }
 
 void MsgCoalesce(std::vector<MSG> &buf);
+void buf_display();
 
 #endif // MSG_UTILS_HPP

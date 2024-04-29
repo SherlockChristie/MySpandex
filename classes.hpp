@@ -87,6 +87,7 @@ public:
     // void msg_init();
     void breakdown(addr_t addr);
     bool fetch_line();
+    void back_line(DATA_LINE &tu_data);
     // void send_rsp(int msg, int REQ_id, bool to_REQ, addr_t line_addr, line_t &line);
     // void rcv_fwd(MSG &fwd_in);
     // void dev_caller_tu();
@@ -119,8 +120,8 @@ public:
     // void rcv_fwd(id_num_t &reqor_id, MSG &fwd_in, word_offset_t offset, DATA_LINE &dev_line);
     // void rcv_fwd_word(id_num_t &reqor_id, DEV &owner_dev, MSG &fwd_in);
     // void rcv_fwd_line(id_num_t &reqor_id, DEV &owner_dev, MSG &fwd_in);
-    void rcv_fwd_single(id_num_t &reqor_id, MSG &fwd_in, unsigned long offset);
-    void rcv_fwd(id_num_t &reqor_id, DEV &owner_dev, MSG &fwd_in);
+    void rcv_fwd_single(MSG &fwd_in, unsigned long offset);
+    void rcv_fwd();
     // void tu_for_gpu();
     // void tu_for_acc();
     // void tu_for_cpu(TU &sender);
@@ -151,8 +152,8 @@ public:
     // void rcv_req(id_num_t tu_id, MSG &tu_req, word_offset_t offset, DATA_LINE &llc_data);
     // void rcv_req_word(id_num_t tu_id, MSG &tu_req);
     // void rcv_req_line(id_num_t tu_id, MSG &tu_req);
-    void rcv_req_single(id_num_t tu_id, MSG &tu_req, unsigned long offset, DATA_LINE &llc_data);
-    void rcv_req(id_num_t tu_id, MSG &tu_req);
+    void rcv_req_single(MSG &tu_req, unsigned long offset, DATA_LINE &llc_data);
+    void rcv_req();
     void rcv_rsp(MSG &rsp_in);
     // void rcv_rsp_line(MSG &rsp_in);
     // void snd_req();

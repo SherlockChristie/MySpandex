@@ -1,12 +1,13 @@
 // TODO: 修改不在预期状态的 FWD_INV;
-
+#include "blocks.hpp"
 #include "classes.hpp"
 #include "bit_utils.hpp"
 #include "msg_utils.hpp"
 using namespace std;
 
-extern LLC llc;
 extern std::vector<MSG> bus;
+extern DEV devs[MAX_DEVS];
+extern LLC llc;
 
 // void TU::tst()
 // {
@@ -35,6 +36,7 @@ void TU::req_mapping(unsigned long id, MSG &dev_req)
     // 不行，这样没有修改TU中req数组的值，还是得用指针;
     MSG gen = dev_req;
     // REQ *self_req = req_buf + id;
+    gen.src = tu_id;
     gen.dest.set(SPX);
 
     switch (id)
@@ -110,6 +112,9 @@ void TU::req_mapping(unsigned long id, MSG &dev_req)
     gen.ok_mask = ~gen.mask;
     req_buf.push_back(gen);
     bus.push_back(gen);
+    cout << "TU_" << dev_which(id) << " put a req to bus---" << endl;
+    gen.msg_display();
+    buf_display();
 }
 
 void TU::state_mapping(unsigned long id, DATA_LINE &data_line, DATA_WORD &data_word)
@@ -165,7 +170,10 @@ void TU::mapping_wrapper(DEV &dev)
     // dev.breakdown(dev.req_buf.front().addr);
     // dev.fetch_line();
     req_mapping(id, dev.req_buf.front());
-    state_mapping(id, dev.dev_line, dev.dev_word);
+    if (req_buf.back().msg == REQ_Odata || req_buf.back().msg == REQ_WTdata)
+    {
+        state_mapping(id, dev.dev_line, dev.dev_word);
+    }
     // dev.req_buf.erase(req_buf.begin());
 }
 
@@ -231,7 +239,7 @@ void TU::mapping_wrapper(DEV &dev)
 // {
 //     MSG gen = fwd_in;
 //     gen.id++;
-//     gen.dest.set(SPX); 
+//     gen.dest.set(SPX);
 //     gen.addr = fwd_in.addr;
 //     gen.gran = GRAN_WORD;
 //     gen.mask = ~fwd_in.mask;
@@ -241,7 +249,7 @@ void TU::mapping_wrapper(DEV &dev)
 //     tus[CPU].req_buf.push_back(gen);
 // }
 
-void TU::rcv_fwd_single(id_num_t &reqor_id, MSG &fwd_in, unsigned long offset)
+void TU::rcv_fwd_single(MSG &fwd_in, unsigned long offset)
 {
     // MSG fwd_in = req_buf.front(); // pushed in req_mapping();
     bool conflict_flag = is_conflict(req_buf, fwd_in);
@@ -259,6 +267,7 @@ void TU::rcv_fwd_single(id_num_t &reqor_id, MSG &fwd_in, unsigned long offset)
     MSG gen_reqor, gen_llc;
     // Send rsp for only LLC if RvkO/Inv; otherwise send rsp fot both;
 
+    gen_reqor.id = fwd_in.id;
     gen_reqor.addr = fwd_in.addr;
     // Default address: the req's addr.
     gen_reqor.gran = GRAN_WORD;
@@ -270,10 +279,10 @@ void TU::rcv_fwd_single(id_num_t &reqor_id, MSG &fwd_in, unsigned long offset)
     // Default data.
     // msg and u_state is decided below.
 
-    gen_reqor.dest.set(reqor_id.to_ulong()); // go to reqor;
-    gen_llc = gen_reqor;                     // Default items are the same except the dest.
-    gen_llc.dest.set(SPX);                   // go to LLC;
-    gen_llc.msg = RSP_FWD;                   // bus to pop out llc's FWD;
+    gen_reqor.dest.set(fwd_in.src.to_ulong()); // go to reqor;
+    gen_llc = gen_reqor;                       // Default items are the same except the dest.
+    gen_llc.dest.set(SPX);                     // go to LLC;
+    gen_llc.msg = RSP_FWD;                     // bus to pop out llc's FWD;
 
     switch (fwd_in.msg)
     {
@@ -527,11 +536,13 @@ void TU::rcv_fwd_single(id_num_t &reqor_id, MSG &fwd_in, unsigned long offset)
 //     rcv_fwd(reqor_id, fwd_in, fwd_in.offset, owner_dev.dev_line);
 // }
 
-void TU::rcv_fwd(id_num_t &reqor_id, DEV &owner_dev, MSG &fwd_in)
+void TU::rcv_fwd()
 {
-    owner_dev.breakdown(fwd_in.addr);
-    owner_dev.fetch_line();
-    state_mapping(owner_dev.dev_id.to_ulong(), owner_dev.dev_line, owner_dev.dev_word);
+    MSG fwd_in = req_buf.front();
+    unsigned long id = tu_id.to_ulong();
+    devs[id].breakdown(fwd_in.addr);
+    devs[id].fetch_line();
+    state_mapping(devs[id].dev_id.to_ulong(), devs[id].dev_line, devs[id].dev_word);
 
     bool flag = 0; // 0 for O; 1 for V;
 
@@ -544,11 +555,12 @@ void TU::rcv_fwd(id_num_t &reqor_id, DEV &owner_dev, MSG &fwd_in)
     {
         if (fwd_in.mask.test(i))
         {
-            rcv_fwd_single(reqor_id, fwd_in, i);
+            rcv_fwd_single(fwd_in, i);
         }
     }
     MsgCoalesce(rsp_buf);
     put_rsp(rsp_buf);
+    cout << "TU " << tu_id << " put rsp to bus---" << endl;
 }
 
 // void TU::rcv_fwd_cpu(id_num_t &reqor_id, MSG &fwd_in)

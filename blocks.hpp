@@ -47,6 +47,9 @@ typedef bitset<WORDS_OFF> word_offset_t;
 typedef bitset<BYTES_OFF> byte_offset_t;
 // typedef bitset<10> req_type;
 
+string msg_which(int msg);
+string dev_which(int id);
+
 // Does not need DEV_DATA, TU_DATA, LLC_DATA; just DATA_LINE or DATA_WORD;
 // Data is always the same; it depends on how we explain the address type.
 struct DATA_LINE
@@ -66,7 +69,7 @@ struct DATA_LINE
         std::cout << "  data: ";
         for (int i = BYTES_PER_WORD * WORDS_PER_LINE - 1; i >= 0; i--)
         {
-            printf("%d ", data[i]);
+            printf("%x ", data[i]);
         }
         std::cout << std::endl;
         std::cout << "  line_state: " << line_state << std::endl;
@@ -94,7 +97,7 @@ struct DATA_WORD
         std::cout << "  data: ";
         for (int i = WORDS_PER_LINE - 1; i >= 0; i--)
         {
-            printf("%d ", data[i]);
+            printf("%x ", data[i]);
         }
         std::cout << std::endl;
         std::cout << "  state: " << state << std::endl;
@@ -107,6 +110,7 @@ struct MSG
     int id; // Every req/fwd has an unique id, rsp has an id same with its corrsponding rsp/fwd.
     // LSB 00:line/word0?
     mask_t mask;   // if all the line is ready;
+    id_num_t src; // self number;
     id_bit_t dest; // Destination"s" of the request;
     addr_t addr;   // Used when it needs data instead of just ownership.
     int msg;
@@ -121,16 +125,16 @@ struct MSG
     // Store the transient states in the req that triggers it instead of the LLC self.
     DATA_LINE data_line;
     DATA_WORD data_word;
-    int retry_times;
+    int retry_times=0;
 
     void msg_display()
     {
-        std::cout << "Message info display" << std::endl;
+        std::cout << "MSG_DISPLAY----------------------------" << endl;
         std::cout << "id: " << id << std::endl;
         std::cout << "mask: " << mask << std::endl;
         std::cout << "dest: " << dest << std::endl;
         std::cout << "addr: " << addr << std::endl;
-        std::cout << "msg: " << msg << std::endl;
+        std::cout << "msg: " << msg_which(msg) << std::endl;
         if (gran)
             std::cout << "gran: line" << std::endl;
         else
@@ -140,7 +144,7 @@ struct MSG
         data_line.line_display();
         data_word.word_display();
         std::cout << "retry_times: " << retry_times << std::endl;
-        std::cout << "Message info display end" << std::endl << std::endl;
+        std::cout << "---------------------------------------" << endl;
     }
 };
 

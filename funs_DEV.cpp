@@ -29,6 +29,16 @@ bool DEV::fetch_line()
     }
 }
 
+// Has problem?
+// TODO here;
+void DEV::back_line(DATA_LINE &tu_data)
+{
+    unsigned long dev_index = (dev_addr.index).to_ulong();
+    state_buf[dev_index] = tu_data.line_state;
+    // word_state_buf[dev_index] = tu_data.word_state;
+    sharers_buf[dev_index] = tu_data.sharers;
+}
+
 // void DEV::RSP_msg(TU &REQor)
 // {
 //     gen.msg = msg;
