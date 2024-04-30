@@ -36,7 +36,7 @@ std::bitset<N2> BitSub(std::bitset<N1> &b, std::size_t offset)
 void LineCopy(line_t &dest, const line_t &src);
 
 // WordIns and WordExt can only be used in LLC and TU.
-// the word's state in the DEV relies on state_mapping_back();
+// the word's state in the DEV relies on data_mapping_back();
 void WordIns(DATA_WORD &word, DATA_LINE &line, unsigned long offset);
 // Insert a word and its state in the line according to the offset.
 

@@ -115,7 +115,7 @@ public:
     // void msg_init();
     // void tst();
     void req_mapping(unsigned long id, MSG &dev_req);
-    void state_mapping(unsigned long id, DATA_LINE &data_line, DATA_WORD &data_word);
+    void data_mapping(unsigned long id, DATA_LINE &data_line, DATA_WORD &data_word);
     void mapping_wrapper(DEV &dev);
     // void rcv_fwd(id_num_t &reqor_id, MSG &fwd_in, word_offset_t offset, DATA_LINE &dev_line);
     // void rcv_fwd_word(id_num_t &reqor_id, DEV &owner_dev, MSG &fwd_in);

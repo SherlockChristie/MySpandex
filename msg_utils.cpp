@@ -106,31 +106,30 @@ void get_rsp(MSG rsp, std::vector<MSG> &req_buf, id_num_t id)
 
 void get_msg()
 {
-    MSG tmp;
-    tmp = bus.front();
-    // for (int i = 0; i < MAX_DEVS; i++)
+    while (!bus.empty())
     {
+        MSG tmp = bus.front();
         if (tmp.msg < RSP_S) // req or fwd
         {
             if (tmp.dest.test(0))
             {
                 llc.req_buf.push_back(tmp);
-                std::cout << "LLC get a req from bus---" << std::endl;
+                std::cout << "---   LLC get a req from bus---" << std::endl;
             }
             if (tmp.dest.test(1))
             {
                 tus[CPU].req_buf.push_back(tmp);
-                std::cout << "TU_CPU get a req from bus---" << std::endl;
+                std::cout << "---TU_CPU get a req from bus---" << std::endl;
             }
             if (tmp.dest.test(2))
             {
                 tus[GPU].req_buf.push_back(tmp);
-                std::cout << "TU_GPU get a req from bus---" << std::endl;
+                std::cout << "---TU_GPU get a req from bus---" << std::endl;
             }
             if (tmp.dest.test(3))
             {
                 tus[ACC].req_buf.push_back(tmp);
-                std::cout << "TU_ACC get a req from bus---" << std::endl;
+                std::cout << "---TU_ACC get a req from bus---" << std::endl;
             }
         }
         else // rsp;
@@ -148,26 +147,26 @@ void get_msg()
             if (tmp.dest.test(0))
             {
                 get_rsp(tmp, llc.req_buf, SPX);
-                std::cout << "LLC get a rsp from bus---" << std::endl;
+                std::cout << "---   LLC get a rsp from bus---" << std::endl;
             }
             if (tmp.dest.test(1))
             {
                 get_rsp(tmp, tus[CPU].req_buf, CPU);
-                std::cout << "TU_CPU get a rsp from bus---" << std::endl;
+                std::cout << "---TU_CPU get a rsp from bus---" << std::endl;
             }
             if (tmp.dest.test(2))
             {
                 get_rsp(tmp, tus[GPU].req_buf, GPU);
-                std::cout << "TU_GPU get a rsp from bus---" << std::endl;
+                std::cout << "---TU_GPU get a rsp from bus---" << std::endl;
             }
             if (tmp.dest.test(3))
             {
                 get_rsp(tmp, tus[ACC].req_buf, ACC);
-                std::cout << "TU_ACC get a rsp from bus---" << std::endl;
+                std::cout << "---TU_ACC get a rsp from bus---" << std::endl;
             }
         }
+        bus.erase(bus.begin());
     }
-    bus.erase(bus.begin());
     buf_display();
 }
 
@@ -194,7 +193,7 @@ void put_rsp(std::vector<MSG> &rsp)
     {
         MSG tmp;
         tmp = rsp.front();
-        std::cout << "PUT_RSP_HERE!!!!!!" << std::endl;
+        // std::cout << "PUT_RSP_HERE!!!!!!" << std::endl;
         tmp.msg_display();
         bus.push_back(tmp);
         // if (tmp.msg < FWD_REQ_S) // rsp, not fwd;

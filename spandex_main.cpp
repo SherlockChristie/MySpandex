@@ -33,10 +33,20 @@ void init_a()
     // addr: 0x66CCFF = 0b 0110 0110 11/00 1100 1111 /11/11
 
     // Data init;
+    // LLC init;
     line_t data_CF = {0x00, 0x66, 0xCC, 0xFF, 0x01, 0x66, 0xCC, 0xFF, 0x10, 0x66, 0xCC, 0xFF, 0x11, 0x66, 0xCC, 0xFF};
     LineCopy(llc.cache[0xCF], data_CF);
     llc.line_state_buf[0xCF] = LLC_V;
     llc.tag_buf[0xCF] = 0x19B; // 0b 0110_0110_11 -> 01_1001_1011
+
+    // addr: 0x66CCFF = 0b 0110 0110 1100 11/00 1111 /11/11
+    // GPU init; (V in Fig 1(a), I in Fig 1(c); but not necessary)
+    // ACC init; (Used in Fig 1(c))
+    line_t data_ACC_F = {0x00, 0x66, 0xCC, 0xFF, 0x01, 0x01, 0xAC, 0xCF, 0x00, 0x66, 0xCC, 0xFF, 0x11, 0x11, 0xAC, 0xCF};
+    // word[1] & word[3] Owned, diff from data_CF, trigger ReqO;
+    LineCopy(devs[ACC].cache[0xF], data_ACC_F);
+    devs[ACC].state_buf[0xF] = DEV_O;
+    devs[ACC].tag_buf[0xF] = 0x19B3; // 0b 0110 0110 1100 11 -> 01 1001 1011 0011
 
     // Req init;
     // ReqO;
@@ -159,6 +169,10 @@ void init_c()
 void do_c()
 {
     do_a();
+
+    cout<<"------------------------- do_a() above to get OVOV line ----------------------"<<endl;
+    cout<<"--------------------------------- do_c() below -------------------------------"<<endl;
+    
     init_c();
     int time = 0;
     for (time = 1; time < 3; time++)
@@ -229,9 +243,9 @@ int main()
     // reset;
     init();
 
-    do_a();
+    // do_a();
     // do_b();
-    // do_c();
+    do_c();
     // do_d();
     return 0;
 }

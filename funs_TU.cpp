@@ -112,14 +112,19 @@ void TU::req_mapping(unsigned long id, MSG &dev_req)
     gen.ok_mask = ~gen.mask;
     req_buf.push_back(gen);
     bus.push_back(gen);
-    cout << "TU_" << dev_which(id) << " put a req to bus---" << endl;
+    cout << "---TU_" << dev_which(id) << " put a req to bus---" << endl;
     gen.msg_display();
     buf_display();
 }
 
-void TU::state_mapping(unsigned long id, DATA_LINE &data_line, DATA_WORD &data_word)
+void TU::data_mapping(unsigned long id, DATA_LINE &data_line, DATA_WORD &data_word)
 // Translate device state into LLC state (Section III-D).
 {
+    // Content copy;
+    tu_line = data_line;
+    tu_word = data_word;
+
+    // State mapping;
     // bitset<STATE_LINE> state_line = BitSub<STATE_BITS, STATE_LINE>(data_line.line_state, 0);
     // bitset<STATE_WORDS> state_words = BitSub<STATE_BITS, STATE_WORDS>(data_line.line_state, 0);
     switch (id)
@@ -172,7 +177,7 @@ void TU::mapping_wrapper(DEV &dev)
     req_mapping(id, dev.req_buf.front());
     if (req_buf.back().msg == REQ_Odata || req_buf.back().msg == REQ_WTdata)
     {
-        state_mapping(id, dev.dev_line, dev.dev_word);
+        data_mapping(id, dev.dev_line, dev.dev_word);
     }
     // dev.req_buf.erase(req_buf.begin());
 }
@@ -357,7 +362,7 @@ void TU::rcv_fwd_single(MSG &fwd_in, unsigned long offset)
                     }
                 }
             }
-            rsp_buf.push_back(gen_llc);
+            // rsp_buf.push_back(gen_llc);
             rsp_buf.push_back(gen_reqor);
             break;
         }
@@ -394,7 +399,7 @@ void TU::rcv_fwd_single(MSG &fwd_in, unsigned long offset)
             data.state = SPX_I;
             req_buf.pop_back();
         }
-        rsp_buf.push_back(gen_llc);
+        // rsp_buf.push_back(gen_llc);
         rsp_buf.push_back(gen_reqor);
         break;
     }
@@ -430,7 +435,7 @@ void TU::rcv_fwd_single(MSG &fwd_in, unsigned long offset)
             data.state = SPX_I;
             req_buf.pop_back();
         }
-        rsp_buf.push_back(gen_llc);
+        // rsp_buf.push_back(gen_llc);
         rsp_buf.push_back(gen_reqor);
         break;
     }
@@ -466,7 +471,7 @@ void TU::rcv_fwd_single(MSG &fwd_in, unsigned long offset)
             // 写一个 ReqCoalesce ？
             req_buf.push_back(gen_req);
             bus.push_back(gen_req);
-            cout << "TU_" << dev_which(tu_id.to_ulong()) << " put a req to bus---" << endl;
+            cout << "---TU_" << dev_which(tu_id.to_ulong()) << " put a req to bus---" << endl;
             gen_req.msg_display();
             buf_display();
         }
@@ -552,7 +557,7 @@ void TU::rcv_fwd_single(MSG &fwd_in, unsigned long offset)
 // {
 //     owner_dev.breakdown(fwd_in.addr);
 //     owner_dev.fetch_line();
-//     state_mapping(owner_dev.dev_id.to_ulong(), owner_dev.dev_line, owner_dev.dev_word);
+//     data_mapping(owner_dev.dev_id.to_ulong(), owner_dev.dev_line, owner_dev.dev_word);
 //     rcv_fwd(reqor_id, fwd_in, fwd_in.offset, owner_dev.dev_line);
 // }
 
@@ -561,12 +566,12 @@ void TU::rcv_fwd()
     MSG fwd_in = req_buf.back();
     unsigned long id = tu_id.to_ulong();
     devs[id].breakdown(fwd_in.addr);
-    devs[id].dev_addr.addr_display();
-    cout << devs[id].fetch_line() << endl;
-    state_mapping(id, devs[id].dev_line, devs[id].dev_word);
+    // devs[id].dev_addr.addr_display();
+    devs[id].fetch_line();
+    // cout << devs[id].fetch_line() << endl;
+    data_mapping(id, devs[id].dev_line, devs[id].dev_word);
 
-    bool flag = 0; // 0 for O; 1 for V;
-
+    // bool flag = 0; // 0 for O; 1 for V;
     // 对于多字请求，应该触发1个回应，而不是2个回应;
     // e.g. Word1.3 in O, Word0.2 in V;  Word1.3 Rsp_a, Word0.2 Rsp_b;
     // 而非 Word0.1.2.3. Rsp_a.Rsp_b.Rsp_c.Rsp_d;
@@ -580,7 +585,7 @@ void TU::rcv_fwd()
         }
     }
     RspCoalesce(rsp_buf);
-    cout << "TU_" << dev_which(id) << " put rsp to bus---" << endl;
+    cout << "---TU_" << dev_which(id) << " put rsp to bus---" << endl;
     put_rsp(rsp_buf);
 }
 
