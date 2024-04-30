@@ -65,7 +65,7 @@ struct DATA_LINE
 
     void line_display()
     {
-        std::cout << "  DATA_LINE_DISPLAY--------------------" << std::endl;
+        std::cout << "  DATA_LINE_DISPLAY----------------------------------" << std::endl;
         std::cout << "  data: ";
         for (int i = BYTES_PER_WORD * WORDS_PER_LINE - 1; i >= 0; i--)
         {
@@ -75,7 +75,7 @@ struct DATA_LINE
         std::cout << "  line_state: " << line_state << std::endl;
         std::cout << "  word_state: " << word_state << std::endl;
         std::cout << "  sharers: " << sharers << std::endl;
-        std::cout << "  -------------------------------------" << std::endl;
+        std::cout << "  ---------------------------------------------------" << std::endl;
     }
 };
 
@@ -91,17 +91,25 @@ struct DATA_WORD
     // DeNovo do the same with Spandex;
     // GPU coh. does not have state S or O;
 
+    void word_clear()
+    {
+        for (int i = 0; i < BYTES_PER_WORD; i++)
+        {
+            data[i] = 0;
+        }
+        state = SPX_I;
+    }
     void word_display()
     {
-        std::cout << "  DATA_WORD_DISPLAY--------------------" << std::endl;
+        std::cout << "  DATA_WORD_DISPLAY----------------------------------" << std::endl;
         std::cout << "  data: ";
-        for (int i = WORDS_PER_LINE - 1; i >= 0; i--)
+        for (int i = BYTES_PER_WORD - 1; i >= 0; i--)
         {
             printf("%x ", data[i]);
         }
         std::cout << std::endl;
         std::cout << "  state: " << state << std::endl;
-        std::cout << "  -------------------------------------" << std::endl;
+        std::cout << "  ---------------------------------------------------" << std::endl;
     }
 };
 
@@ -129,7 +137,7 @@ struct MSG
 
     void msg_display()
     {
-        std::cout << "MSG_DISPLAY----------------------------" << endl;
+        std::cout << "MSG_DISPLAY------------------------------------------" << endl;
         std::cout << "id: " << id << std::endl;
         std::cout << "mask: " << mask << std::endl;
         std::cout << "src: " << dev_which(src.to_ulong()) << std::endl;
@@ -145,7 +153,7 @@ struct MSG
         data_line.line_display();
         data_word.word_display();
         std::cout << "retry_times: " << retry_times << std::endl;
-        std::cout << "---------------------------------------" << endl;
+        std::cout << "-----------------------------------------------------" << endl;
     }
 };
 
@@ -185,12 +193,12 @@ struct DEV_ADDR
 
     void addr_display()
     {
-        std::cout << "  DEV_ADDR_DISPLAY---------------------" << std::endl;
+        std::cout << "  DEV_ADDR_DISPLAY-----------------------------------" << std::endl;
         std::cout << "  tag: " << tag << std::endl;
         std::cout << "  index: " << index << std::endl;
         std::cout << "  word_offset: " << w_off << std::endl;
         std::cout << "  byte_offset_t: " << b_off << std::endl;
-        std::cout << "  -------------------------------------" << std::endl;
+        std::cout << "  ---------------------------------------------------" << std::endl;
     }
 };
 
@@ -203,12 +211,12 @@ struct LLC_ADDR
 
     void addr_display()
     {
-        std::cout << "  LLC_ADDR_DISPLAY---------------------" << std::endl;
+        std::cout << "  LLC_ADDR_DISPLAY-----------------------------------" << std::endl;
         std::cout << "  tag: " << tag << std::endl;
         std::cout << "  index: " << index << std::endl;
         std::cout << "  word_offset: " << w_off << std::endl;
         std::cout << "  byte_offset_t: " << b_off << std::endl;
-        std::cout << "  -------------------------------------" << std::endl;
+        std::cout << "  ---------------------------------------------------" << std::endl;
     }
 };
 

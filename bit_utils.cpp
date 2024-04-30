@@ -75,7 +75,7 @@ void LineCopy(line_t &dest, const line_t &src)
 // }
 
 // WordIns and WordExt can only be used in LLC and TU.
-// the word's state in the DEV relies on data_mapping_back();
+// the word's state in the DEV relies on state_mapping_back();
 void WordIns(DATA_WORD &word, DATA_LINE &line, unsigned long offset)
 // Insert a word and its state in the line according to the offset.
 {
@@ -92,8 +92,10 @@ void WordIns(DATA_WORD &word, DATA_LINE &line, unsigned long offset)
         // bool is_dev not needed;
         line.word_state.set(offset);
     else
-        line.line_state = word.state;
-    // 行状态等同于字状态;
+    {
+        line.line_state = word.state; // 行状态等同于字状态;
+        line.word_state.reset(offset); // 对于从 O 转到其他状态的字，应当更新行状态;
+    }
 }
 
 void WordExt(DATA_WORD &word, DATA_LINE &line, unsigned long offset)
@@ -107,7 +109,7 @@ void WordExt(DATA_WORD &word, DATA_LINE &line, unsigned long offset)
     }
     // if (line.line_state.test(offset))
     if (line.word_state.test(offset))
-    // word_state!!!!! not line_state!!!!!
+        // word_state!!!!! not line_state!!!!!
         word.state = SPX_O;
     else
     {

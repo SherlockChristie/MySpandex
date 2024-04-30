@@ -188,6 +188,7 @@ void LLC::rcv_req_single(MSG &tu_req, unsigned long offset, DATA_LINE &llc_data)
                     // 对于任何引起到O状态的转移，都应该同步更新数据域内容为所有者id!!!!!!!!!
                     else // REQS3;
                     {
+                        data.word_clear();
                         data.data[0] = req_id_int;
                         data.state = SPX_O;
                         gen.msg = FWD_REQ_Odata;
@@ -196,6 +197,7 @@ void LLC::rcv_req_single(MSG &tu_req, unsigned long offset, DATA_LINE &llc_data)
                 // REQS3;
                 else if (data.state == SPX_V)
                 {
+                    data.word_clear();
                     data.data[0] = req_id_int;
                     data.state = SPX_O;
                     gen.msg = RSP_S;
@@ -209,6 +211,7 @@ void LLC::rcv_req_single(MSG &tu_req, unsigned long offset, DATA_LINE &llc_data)
                 gen.msg = FWD_REQ_O;
                 gen.dest.reset();
                 gen.dest.set(FindOwner(llc_data).to_ulong());
+                WordExt(data, tu_req.data_line, offset);
                 data.state = SPX_V;
             }
             else if (data.state == SPX_S)
@@ -222,6 +225,7 @@ void LLC::rcv_req_single(MSG &tu_req, unsigned long offset, DATA_LINE &llc_data)
             else if (data.state == SPX_V || data.state == SPX_I)
             {
                 gen.msg = RSP_WT;
+                WordExt(data, tu_req.data_line, offset);
                 data.state = SPX_V;
             }
             break;
@@ -247,6 +251,7 @@ void LLC::rcv_req_single(MSG &tu_req, unsigned long offset, DATA_LINE &llc_data)
             else if (data.state == SPX_V || data.state == SPX_I)
             {
                 gen.msg = RSP_O;
+                data.word_clear();
                 data.data[0] = req_id_int;
                 data.state = SPX_O;
             }
@@ -291,6 +296,7 @@ void LLC::rcv_req_single(MSG &tu_req, unsigned long offset, DATA_LINE &llc_data)
             else if (data.state == SPX_V)
             {
                 // no blocking states;
+                data.word_clear();
                 data.data[0] = req_id_int;
                 data.state = SPX_O;
                 gen.msg = RSP_Odata;
@@ -312,6 +318,9 @@ void LLC::rcv_req_single(MSG &tu_req, unsigned long offset, DATA_LINE &llc_data)
             {
                 if (tu_req.src == FindOwner(llc_data))
                 {
+                    // data = tu_req.data_word;
+                    // TODO: Using this or: ???
+                    WordExt(data, tu_req.data_line, offset);
                     data.state = SPX_V;
                     gen.msg = RSP_WB_ACK;
                 }

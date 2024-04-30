@@ -1,4 +1,5 @@
 // TODO: 修改不在预期状态的 FWD_INV;
+// TODO: TU 的 req_buf 出队的同时 DEV 的 req_buf 也应该出队;
 #include "blocks.hpp"
 #include "classes.hpp"
 #include "bit_utils.hpp"
@@ -8,11 +9,6 @@ using namespace std;
 extern std::vector<MSG> bus;
 extern DEV devs[MAX_DEVS];
 extern LLC llc;
-
-// void TU::tst()
-// {
-//     printf("OK tst\n");
-// }
 
 // void TU::msg_init()
 // {
@@ -29,7 +25,59 @@ extern LLC llc;
 //     }
 // }
 
-void TU::req_mapping(unsigned long id, MSG &dev_req)
+void TU::data_mapping(unsigned long id, DATA_LINE &data_line, DATA_WORD &data_word)
+// Translate device state into LLC state (Section III-D).
+{
+    // Content copy;
+    tu_line = data_line;
+    tu_word = data_word;
+
+    // State mapping;
+    // bitset<STATE_LINE> state_line = BitSub<STATE_BITS, STATE_LINE>(data_line.line_state, 0);
+    // bitset<STATE_WORDS> state_words = BitSub<STATE_BITS, STATE_WORDS>(data_line.line_state, 0);
+    switch (id)
+    {
+    case GPU:
+    {
+        if (data_word.state == DEV_I)
+            tu_word.state = SPX_I;
+        else if (data_word.state == DEV_V)
+            tu_word.state = SPX_V;
+        break;
+    }
+    case ACC:
+    {
+        if (data_line.line_state == DEV_I)
+            tu_line.line_state = LLC_I;
+        else if (data_line.line_state == DEV_V)
+            tu_line.line_state = LLC_V;
+        else if (data_line.line_state == DEV_O)
+        {
+            tu_line.line_state = LLC_V;
+            tu_line.word_state.set();
+        }
+        break;
+    }
+    case CPU:
+    {
+        if (data_line.line_state == DEV_I)
+            tu_line.line_state = LLC_I;
+        else if (data_line.line_state == DEV_S)
+            tu_line.line_state = LLC_S;
+        else if (data_line.line_state == DEV_M || data_line.line_state == DEV_E)
+        {
+            tu_line.line_state = LLC_V;
+            tu_line.word_state.set();
+        }
+        break;
+    }
+    default:
+        tu_line.line_state = LLC_I;
+        break;
+    }
+}
+
+MSG TU::req_mapping(unsigned long id, MSG &dev_req)
 // Translate device message into LLC message (Table II).
 {
     // REQ self_req = req_buf[id];
@@ -110,75 +158,33 @@ void TU::req_mapping(unsigned long id, MSG &dev_req)
     }
     // else gen.mask = dev_req.mask;
     gen.ok_mask = ~gen.mask;
-    req_buf.push_back(gen);
-    bus.push_back(gen);
-    cout << "---TU_" << dev_which(id) << " put a req to bus---" << endl;
-    gen.msg_display();
-    buf_display();
-}
 
-void TU::data_mapping(unsigned long id, DATA_LINE &data_line, DATA_WORD &data_word)
-// Translate device state into LLC state (Section III-D).
-{
-    // Content copy;
-    tu_line = data_line;
-    tu_word = data_word;
-
-    // State mapping;
-    // bitset<STATE_LINE> state_line = BitSub<STATE_BITS, STATE_LINE>(data_line.line_state, 0);
-    // bitset<STATE_WORDS> state_words = BitSub<STATE_BITS, STATE_WORDS>(data_line.line_state, 0);
-    switch (id)
-    {
-    case GPU:
-    {
-        if (data_word.state == DEV_I)
-            tu_word.state = SPX_I;
-        else if (data_word.state == DEV_V)
-            tu_word.state = SPX_V;
-        break;
-    }
-    case ACC:
-    {
-        if (data_line.line_state == DEV_I)
-            tu_line.line_state = LLC_I;
-        else if (data_line.line_state == DEV_V)
-            tu_line.line_state = LLC_V;
-        else if (data_line.line_state == DEV_O)
-        {
-            tu_line.line_state = LLC_V;
-            tu_line.word_state.set();
-        }
-        break;
-    }
-    case CPU:
-    {
-        if (data_line.line_state == DEV_I)
-            tu_line.line_state = LLC_I;
-        else if (data_line.line_state == DEV_S)
-            tu_line.line_state = LLC_S;
-        else if (data_line.line_state == DEV_M || data_line.line_state == DEV_E)
-        {
-            tu_line.line_state = LLC_V;
-            tu_line.word_state.set();
-        }
-        break;
-    }
-    default:
-        tu_line.line_state = LLC_I;
-        break;
-    }
+    return gen;
 }
 
 void TU::mapping_wrapper(DEV &dev)
 {
     unsigned long id = tu_id.to_ulong();
-    // dev.breakdown(dev.req_buf.front().addr);
-    // dev.fetch_line();
-    req_mapping(id, dev.req_buf.front());
-    if (req_buf.back().msg == REQ_Odata || req_buf.back().msg == REQ_WTdata)
+    MSG tmp = dev.req_buf.front();
+    MSG gen = req_mapping(id, tmp);
+    // if (req_buf.back().msg == REQ_O || req_buf.back().msg == REQ_WT || req_buf.back().msg == REQ_Odata || req_buf.back().msg == REQ_WTdata || req_buf.back().msg == REQ_WB)
+    if (tmp.msg != READ)
     {
+        dev.breakdown(tmp.addr);
+        dev.fetch_line();
         data_mapping(id, dev.dev_line, dev.dev_word);
+        std::cout << "IS LINE OK MAPPED????" << std::endl;
+        tu_line.line_display();
+        gen.data_line = tu_line;
+        gen.data_word = tu_word;
     }
+
+    req_buf.push_back(gen);
+    bus.push_back(gen);
+    std::cout << "---TU_" << dev_which(id) << " put a req to bus---" << std::endl;
+    gen.msg_display();
+    buf_display();
+
     // dev.req_buf.erase(req_buf.begin());
 }
 
@@ -254,6 +260,11 @@ void TU::mapping_wrapper(DEV &dev)
 //     tus[CPU].req_buf.push_back(gen);
 // }
 
+// void TU::gen_ReqWB(unsigned long offset)
+// {
+//     down.set(offset);
+// }
+
 void TU::rcv_fwd_single(MSG &fwd_in, unsigned long offset)
 {
     // MSG fwd_in = req_buf.front(); // pushed in req_mapping();
@@ -272,8 +283,9 @@ void TU::rcv_fwd_single(MSG &fwd_in, unsigned long offset)
     DATA_WORD data;
     WordExt(data, tu_line, offset);
 
-    MSG gen_reqor, gen_llc, gen_req;
-    // Send rsp for only LLC if RvkO/Inv; otherwise send rsp fot both;
+    MSG gen_reqor, gen_llc;
+    // MSG gen_reqor, gen_llc, gen_req;
+    // Send rsp for only LLC if RvkO/Inv; otherwise send rsp fot both; //??????
 
     gen_reqor.id = fwd_in.id;
     gen_reqor.addr = fwd_in.addr;
@@ -293,12 +305,13 @@ void TU::rcv_fwd_single(MSG &fwd_in, unsigned long offset)
     gen_llc.dest.set(SPX);                     // go to LLC;
     gen_llc.msg = RSP_FWD;                     // bus to pop out llc's FWD;
 
-    gen_req = fwd_in;
-    gen_req.id++;
-    gen_req.src = tu_id;
-    gen_req.dest.reset();
-    gen_req.dest.set(SPX);
-    gen_req.retry_times = 0;
+    // gen_req = fwd_in;
+    // gen_req.id++;
+    // gen_req.mask.set();
+    // gen_req.src = tu_id;
+    // gen_req.dest.reset();
+    // gen_req.dest.set(SPX);
+    // gen_req.retry_times = 0;
 
     switch (fwd_in.msg)
     {
@@ -396,7 +409,11 @@ void TU::rcv_fwd_single(MSG &fwd_in, unsigned long offset)
         else if (data.state == SPX_O)
         {
             gen_reqor.msg = RSP_O;
+
+            // 对于任何从 O 状态降级至 I 状态。应当触发ReqWB;
+            down.set(offset);
             data.state = SPX_I;
+
             req_buf.pop_back();
         }
         // rsp_buf.push_back(gen_llc);
@@ -463,17 +480,20 @@ void TU::rcv_fwd_single(MSG &fwd_in, unsigned long offset)
         else if (data.state == SPX_O)
         {
             gen_llc.msg = RSP_RVK_O;
-            data.state = SPX_I;
-            req_buf.pop_back();
 
-            gen_req.msg = REQ_WB;
             // TODO: 但是这样的话，会触发2次REQ_WB？
             // 写一个 ReqCoalesce ？
-            req_buf.push_back(gen_req);
-            bus.push_back(gen_req);
-            cout << "---TU_" << dev_which(tu_id.to_ulong()) << " put a req to bus---" << endl;
-            gen_req.msg_display();
-            buf_display();
+            // 或者当成 rsp 等同处理？LLC 就是这么对待 fwd 的;
+            // req_buf.push_back(gen_req);
+            // bus.push_back(gen_req);
+            // std::cout << "---TU_" << dev_which(tu_id.to_ulong()) << " put a req to bus---" << std::endl;
+            // gen_req.msg_display();
+            // buf_display();
+
+            down.set(offset);
+            data.state = SPX_I;
+
+            req_buf.pop_back();
         }
         rsp_buf.push_back(gen_llc);
         // no rsp_buf.push_back(gen_reqor);
@@ -568,8 +588,9 @@ void TU::rcv_fwd()
     devs[id].breakdown(fwd_in.addr);
     // devs[id].dev_addr.addr_display();
     devs[id].fetch_line();
-    // cout << devs[id].fetch_line() << endl;
+    // std::cout << devs[id].fetch_line() << std::endl;
     data_mapping(id, devs[id].dev_line, devs[id].dev_word);
+    // tu_line.line_display();
 
     // bool flag = 0; // 0 for O; 1 for V;
     // 对于多字请求，应该触发1个回应，而不是2个回应;
@@ -585,7 +606,25 @@ void TU::rcv_fwd()
         }
     }
     RspCoalesce(rsp_buf);
-    cout << "---TU_" << dev_which(id) << " put rsp to bus---" << endl;
+    if (down.any())
+    {
+        MSG gen_req;
+        gen_req = fwd_in;
+        gen_req.msg = REQ_WB;
+        gen_req.id++;
+        gen_req.mask.reset();
+        gen_req.mask = ~down;
+        gen_req.ok_mask = down; // ~ gen_req.mask;
+        gen_req.src = tu_id;
+        gen_req.dest.reset();
+        gen_req.dest.set(SPX);
+        gen_req.data_line = tu_line;
+        gen_req.retry_times = 0;
+        rsp_buf.push_back(gen_req);
+        req_buf.push_back(gen_req); // waiting for rsp from the bus;
+        down.reset();
+    }
+    std::cout << "---TU_" << dev_which(id) << " put rsp to bus---" << std::endl;
     put_rsp(rsp_buf);
 }
 

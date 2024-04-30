@@ -284,7 +284,7 @@ void buf_brief(std::vector<MSG> &buf)
 
 void buf_display()
 {
-    std::cout << "-------------BUF_DISPLAY---------------" << std::endl;
+    std::cout << "---------------------BUF_DISPLAY---------------------" << std::endl;
     // std::cout << "--BUS--|--LLC--|--CPU--|--ACC--|--GPU--" << std::endl;
     std::cout << "--BUS--" << std::endl;
     buf_brief(bus);
@@ -296,12 +296,12 @@ void buf_display()
     buf_brief(tus[GPU].req_buf);
     std::cout << "--ACC--" << std::endl;
     buf_brief(tus[ACC].req_buf);
-    std::cout << "---------------------------------------" << std::endl;
+    std::cout << "-----------------------------------------------------" << std::endl;
 }
 
 void buf_detailed(std::vector<MSG> &buf)
 {
-    std::cout << "---------------BUF_DETAILED_INFO---------------" << std::endl;
+    std::cout << "--------------------BUF_DETAILED_INFO-------------------" << std::endl;
     int len = buf.size();
     if (!len)
     {
@@ -311,5 +311,5 @@ void buf_detailed(std::vector<MSG> &buf)
     {
         buf[i].msg_display();
     }
-    std::cout << "-----------------------------------------------" << std::endl;
+    std::cout << "---------------------------------------------------------" << std::endl;
 }

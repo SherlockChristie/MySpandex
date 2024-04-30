@@ -111,15 +111,16 @@ public:
     std::vector<MSG> rsp_buf;
     DATA_LINE tu_line;
     DATA_WORD tu_word;
+    mask_t down; // Used for triggering a write-back for the words that were not requested in the downgraded line.
 
     // void msg_init();
-    // void tst();
-    void req_mapping(unsigned long id, MSG &dev_req);
     void data_mapping(unsigned long id, DATA_LINE &data_line, DATA_WORD &data_word);
+    MSG req_mapping(unsigned long id, MSG &dev_req);
     void mapping_wrapper(DEV &dev);
     // void rcv_fwd(id_num_t &reqor_id, MSG &fwd_in, word_offset_t offset, DATA_LINE &dev_line);
     // void rcv_fwd_word(id_num_t &reqor_id, DEV &owner_dev, MSG &fwd_in);
     // void rcv_fwd_line(id_num_t &reqor_id, DEV &owner_dev, MSG &fwd_in);
+    // void gen_ReqWB(unsigned long offset);
     void rcv_fwd_single(MSG &fwd_in, unsigned long offset);
     void rcv_fwd();
     // void tu_for_gpu();
