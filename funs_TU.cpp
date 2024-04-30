@@ -1,5 +1,4 @@
 // TODO: 修改不在预期状态的 FWD_INV;
-// TODO: TU 的 req_buf 出队的同时 DEV 的 req_buf 也应该出队;
 #include "blocks.hpp"
 #include "classes.hpp"
 #include "bit_utils.hpp"
@@ -173,8 +172,8 @@ void TU::mapping_wrapper(DEV &dev)
         dev.breakdown(tmp.addr);
         dev.fetch_line();
         data_mapping(id, dev.dev_line, dev.dev_word);
-        std::cout << "IS LINE OK MAPPED????" << std::endl;
-        tu_line.line_display();
+        // std::cout << "IS LINE OK MAPPED????" << std::endl;
+        // tu_line.line_display();
         gen.data_line = tu_line;
         gen.data_word = tu_word;
     }
@@ -613,15 +612,23 @@ void TU::rcv_fwd()
         gen_req.msg = REQ_WB;
         gen_req.id++;
         gen_req.mask.reset();
-        gen_req.mask = ~down;
-        gen_req.ok_mask = down; // ~ gen_req.mask;
+        if (rsp_buf.back().msg == RSP_RVK_O)
+        // RvkO triggers a write-back of the owned data;
+            gen_req.mask = down;
+        else
+        // triggers a write-back for the words that were not requested in the downgraded line;
+            gen_req.mask = ~down;
+        gen_req.ok_mask = ~gen_req.mask;
         gen_req.src = tu_id;
         gen_req.dest.reset();
         gen_req.dest.set(SPX);
         gen_req.data_line = tu_line;
         gen_req.retry_times = 0;
+        // 无论是 push_back() 还是 emplace_back() 都会删除传入的元素，会导致 req_buf 没东西;
+        // TODO: ???????? 为什么还是不行;
+        MSG gen_req_2 = gen_req;
         rsp_buf.push_back(gen_req);
-        req_buf.push_back(gen_req); // waiting for rsp from the bus;
+        req_buf.push_back(gen_req_2); // waiting for rsp from the bus;
         down.reset();
     }
     std::cout << "---TU_" << dev_which(id) << " put rsp to bus---" << std::endl;

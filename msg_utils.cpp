@@ -1,3 +1,5 @@
+// TODO: TU 的 rcv_rsp 应该也有状态转移至 DEV !!!!!!!!!!!!!!
+
 // 在上升沿时执行所有msg的入队操作，在下降沿时执行所有msg的出队操作;
 // 如果在下一个上升沿时到来时，req队列仍然不为空，证明此时数据处于阻塞状态，后来的req加入队列等待;
 
@@ -69,6 +71,11 @@ void rcv_rsp_single(MSG &rsp_in, unsigned long offset, DATA_LINE &data_line)
         data.state = SPX_O;
         break;
     }
+    default:
+    {
+        std::cout << "Rsp received. No state transition needed." << std::endl;
+        break;
+    }
     }
 
     WordIns(data, data_line, offset);
@@ -78,15 +85,17 @@ void get_rsp(MSG rsp, std::vector<MSG> &req_buf, id_num_t id)
 // get a rsp, find match in req_buf;
 {
     MSG gen = rsp;
-    int req_len = req_buf.size();
-    for (int i = 0; i < req_len; i++)
+    // int req_len = req_buf.size();
+    for (int i = 0; i < req_buf.size(); i++)
     {
         if (rsp.id == req_buf[i].id)
         {
             if (rsp.gran == GRAN_LINE)
-            { // 同时释放req和rsp;
+            {
+                // 同时释放req和rsp;
                 // 但是rsp已经在总线释放了？
                 req_buf.erase(req_buf.begin() + i);
+                // TU 的 req_buf 出队的同时 DEV 的 req_buf 也应该出队;
                 get_rsp(gen, devs[id.to_ulong()].req_buf, id);
             }
             else
@@ -146,23 +155,23 @@ void get_msg()
             // 无需将rsp_in入队，直接对对碰消掉req和rsp_in;
             if (tmp.dest.test(0))
             {
-                get_rsp(tmp, llc.req_buf, SPX);
                 std::cout << "---   LLC get a rsp from bus---" << std::endl;
+                llc.rcv_rsp(tmp); 
             }
             if (tmp.dest.test(1))
             {
-                get_rsp(tmp, tus[CPU].req_buf, CPU);
                 std::cout << "---TU_CPU get a rsp from bus---" << std::endl;
+                get_rsp(tmp, tus[CPU].req_buf, CPU);
             }
             if (tmp.dest.test(2))
             {
-                get_rsp(tmp, tus[GPU].req_buf, GPU);
                 std::cout << "---TU_GPU get a rsp from bus---" << std::endl;
+                get_rsp(tmp, tus[GPU].req_buf, GPU);
             }
             if (tmp.dest.test(3))
             {
-                get_rsp(tmp, tus[ACC].req_buf, ACC);
                 std::cout << "---TU_ACC get a rsp from bus---" << std::endl;
+                get_rsp(tmp, tus[ACC].req_buf, ACC);
             }
         }
         bus.erase(bus.begin());

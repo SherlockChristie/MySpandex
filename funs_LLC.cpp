@@ -371,7 +371,8 @@ void LLC::rcv_req_single(MSG &tu_req, unsigned long offset, DATA_LINE &llc_data)
 void LLC::rcv_req_inner(MSG &tu_req, int k)
 {
     breakdown(tu_req.addr);
-    fetch_line();
+    std::cout << "Is line fetched? " << fetch_line() << std::endl;
+    cout << "OK req here!!!!!!" << endl;
 
     // if (llc_data.word_state.any())
     // // if any word in O, rsp may be different for each word;
@@ -407,6 +408,7 @@ void LLC::rcv_req_inner(MSG &tu_req, int k)
     {
         cout << "---   LLC put a fwd to bus---" << endl;
     }
+    buf_detailed(rsp_buf);
     put_rsp(rsp_buf);
     //}
     // else // the whole line only have 1 rsp;
@@ -431,15 +433,16 @@ void LLC::rcv_req()
         // MSG tu_req = req_buf[k];
         // 不能这样。 这样相当于拷贝了一个 req_buf[k] 的副本，没能更改 req_buf[k] 的 u_state;
         // 使用引用，tu_req 成为 req_buf[k] 的别名;
-        MSG &tu_req = req_buf[k];
-        if (tu_req.u_state.any())
+        // MSG &tu_req = req_buf[k];
+        if (req_buf[k].u_state.any())
         {
             old_unstable++;
         }
         else // u_state = 0000;
         {
-            rcv_req_inner(tu_req, k);
+            rcv_req_inner(req_buf[k], k);
         }
+        buf_detailed(req_buf);
     }
     // 先从后往前处理新入队的，如果新入队的操作使得阻塞状态变为非阻塞状态了，再次处理阻塞状态的req;
     // cout << "Old_unstable count: " << old_unstable << endl;
@@ -454,8 +457,10 @@ void LLC::rcv_req()
 void LLC::rcv_rsp(MSG &rsp_in)
 {
     breakdown(rsp_in.addr);
-    fetch_line();
-
+    // fetch_line();
+    std::cout << "Is line fetched? " << fetch_line() << std::endl;
+    cout << "OK here!!!!!! What's the rsp?" << endl;
+    rsp_in.msg_display();
     for (int i = 0; i < WORDS_PER_LINE; i++)
     {
         if (rsp_in.mask.test(i))

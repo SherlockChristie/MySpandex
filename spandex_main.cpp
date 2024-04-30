@@ -8,6 +8,7 @@
 using namespace std;
 
 // TODO: 用 fetch_line() 和 back_line() 函数初始化而不是手动;
+// TODO: ReqWB 应该留在 tu 的 req_buf 内；fwd 应该留在 LLC 的 req_buf 内;
 
 // 将下面几个设置为工程全局变量;
 std::vector<MSG> bus;
@@ -15,7 +16,7 @@ DEV devs[MAX_DEVS];
 TU tus[MAX_DEVS];
 LLC llc;
 
-MSG Req_001, Req_002, Req_003, Req_004, Req_005;
+MSG Req_001, Req_002, Req_003;
 
 void init()
 {
@@ -98,6 +99,7 @@ void init_b()
 {
     // ------------- Fig 1(b) --------------
     // Handling word granularity ReqWT+data for remotely owned data.
+    // Wish see GPU's data, not ACC's data after the write serialization.
     // addr: 0x39C5BB = 0b 0011 1001 11/00 0101 1011 /10/11
 
     // Data init;
@@ -108,11 +110,20 @@ void init_b()
     llc.line_state_buf[0x5B] = LLC_V;
     llc.word_state_buf[0x5B].set(); // set all to O state;
     llc.tag_buf[0x5B] = 0xE7;       // 0b 0011_1001_11 -> 00_1110_0111
+
+    // addr: 0x39C5BB = 0b 0011 1001 1100 01/01 1011 /10/11
     // ACC init;
     line_t data_ACC_1B = {0x00, 0x39, 0xC5, 0xBB, 0x01, 0x39, 0xC5, 0xBB, 0x10, 0x39, 0xC5, 0xBB, 0x11, 0x39, 0xC5, 0xBB};
     LineCopy(devs[ACC].cache[0x1B], data_ACC_1B);
     devs[ACC].state_buf[0x1B] = DEV_O;
     devs[ACC].tag_buf[0x1B] = 0xE71; // 0b 0011_1001_1100_01 -> 00_1110_0111_0001
+    // GPU init;
+    line_t data_GPU_1B = {0x00, 0x00, 0x0E, 0x71, 0x01, 0x00, 0x0E, 0x71, 0x10, 0x00, 0x0E, 0x71, 0x11, 0x00, 0x0E, 0x71};
+    LineCopy(devs[GPU].cache[0x1B], data_GPU_1B);
+    devs[GPU].state_buf[0x1B] = DEV_V;
+    // should be I??? a store miss??? but assume Valid;
+    // Yes it's Owned in ACC; but just assume it is the data to be stored;
+    devs[GPU].tag_buf[0x1B] = 0xE71;
 
     // Req init;
     // ReqWTdata;
@@ -129,7 +140,7 @@ void do_b()
 {
     init_b();
     int time = 0;
-    for (time = 1; time < 5; time++)
+    for (time = 1; time < 3; time++)
     {
         cout << "Timing: " << time << endl;
         if (time == 1)
@@ -137,16 +148,17 @@ void do_b()
             devs[GPU].req_buf.push_back(Req_003);
             tus[GPU].mapping_wrapper(devs[GPU]);
         }
-        get_msg(); // 上升沿get_msg();
+        get_msg();
         llc.rcv_req();
+        get_msg();
+        if (time == 1) tus[ACC].rcv_fwd();
+
         // cout << "------ LLC TEST -------" << endl;
         // int len = llc.req_buf.size();
         // for (int i = 0; i < len; i++)
         // {
         //     llc.req_buf[i].msg_display();
         // }
-        get_msg(); // 下降沿get_msg();
-        tus[ACC].rcv_fwd();
     }
 }
 
@@ -214,7 +226,7 @@ void init_d()
     // CPU init;
     line_t data_CPU_2E = {0x00, 0xAD, 0xBE, 0xEF, 0x01, 0xAD, 0xBE, 0xEF, 0x10, 0xAD, 0xBE, 0xEF, 0x11, 0xAD, 0xBE, 0xEF};
     LineCopy(devs[CPU].cache[0x2E], data_CPU_2E);
-    devs[CPU].state_buf[0x2E] = DEV_E; // not O;
+    devs[CPU].state_buf[0x2E] = DEV_E;  // not O;
     devs[CPU].tag_buf[0x2E] = 0x37AB6F; // 0b 1101 1110 1010 1101 1011 11 -> 11 0111 1010 1011 0110 1111
 
     // GPU init (not necessary, but to test if ReqWT works);
@@ -250,7 +262,8 @@ void do_d()
         get_msg(); // 上升沿get_msg();
         llc.rcv_req();
         get_msg(); // 下降沿get_msg();
-        if(time == 1) tus[CPU].rcv_fwd();
+        if (time == 1)
+            tus[CPU].rcv_fwd();
     }
 }
 
@@ -259,9 +272,10 @@ int main()
     // reset;
     init();
 
+    // Just uncomment the following lines to see the corresponding case.
     // do_a();
-    // do_b();
+    do_b();
     // do_c();
-    do_d();
+    // do_d();
     return 0;
 }
