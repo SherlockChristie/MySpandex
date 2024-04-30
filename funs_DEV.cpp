@@ -33,6 +33,7 @@ bool DEV::fetch_line()
 void DEV::back_line(DATA_LINE &tu_data)
 {
     unsigned long dev_index = (dev_addr.index).to_ulong();
+    LineCopy(cache[dev_index],tu_data.data);
     state_buf[dev_index] = tu_data.line_state;
     // word_state_buf[dev_index] = tu_data.word_state;
     sharers_buf[dev_index] = tu_data.sharers;

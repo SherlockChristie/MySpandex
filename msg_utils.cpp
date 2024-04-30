@@ -115,22 +115,22 @@ void get_msg()
             if (tmp.dest.test(0))
             {
                 llc.req_buf.push_back(tmp);
-                cout << "LLC get a req from bus---" << endl;
+                std::cout << "LLC get a req from bus---" << std::endl;
             }
             if (tmp.dest.test(1))
             {
                 tus[CPU].req_buf.push_back(tmp);
-                cout << "TU_CPU get a req from bus---" << endl;
+                std::cout << "TU_CPU get a req from bus---" << std::endl;
             }
             if (tmp.dest.test(2))
             {
                 tus[GPU].req_buf.push_back(tmp);
-                cout << "TU_GPU get a req from bus---" << endl;
+                std::cout << "TU_GPU get a req from bus---" << std::endl;
             }
             if (tmp.dest.test(3))
             {
                 tus[ACC].req_buf.push_back(tmp);
-                cout << "TU_ACC get a req from bus---" << endl;
+                std::cout << "TU_ACC get a req from bus---" << std::endl;
             }
         }
         else // rsp;
@@ -148,22 +148,22 @@ void get_msg()
             if (tmp.dest.test(0))
             {
                 get_rsp(tmp, llc.req_buf, SPX);
-                cout << "LLC get a rsp from bus---" << endl;
+                std::cout << "LLC get a rsp from bus---" << std::endl;
             }
             if (tmp.dest.test(1))
             {
                 get_rsp(tmp, tus[CPU].req_buf, CPU);
-                cout << "TU_CPU get a rsp from bus---" << endl;
+                std::cout << "TU_CPU get a rsp from bus---" << std::endl;
             }
             if (tmp.dest.test(2))
             {
                 get_rsp(tmp, tus[GPU].req_buf, GPU);
-                cout << "TU_GPU get a rsp from bus---" << endl;
+                std::cout << "TU_GPU get a rsp from bus---" << std::endl;
             }
             if (tmp.dest.test(3))
             {
                 get_rsp(tmp, tus[ACC].req_buf, ACC);
-                cout << "TU_ACC get a rsp from bus---" << endl;
+                std::cout << "TU_ACC get a rsp from bus---" << std::endl;
             }
         }
     }
@@ -194,6 +194,7 @@ void put_rsp(std::vector<MSG> &rsp)
     {
         MSG tmp;
         tmp = rsp.front();
+        std::cout << "PUT_RSP_HERE!!!!!!" << std::endl;
         tmp.msg_display();
         bus.push_back(tmp);
         // if (tmp.msg < FWD_REQ_S) // rsp, not fwd;
@@ -210,19 +211,19 @@ void put_rsp(std::vector<MSG> &rsp)
 //     {
 //     case SPX:
 //         put_rsp_inner(llc.rsp_buf);
-//         cout << "LLC put rsp to bus---" << endl;
+//         std::cout << "LLC put rsp to bus---" << std::endl;
 //         break;
 //     case CPU:
 //         put_rsp_inner(tus[CPU].rsp_buf);
-//         cout << "TU_CPU put rsp to bus---" << endl;
+//         std::cout << "TU_CPU put rsp to bus---" << std::endl;
 //         break;
 //     case GPU:
 //         put_rsp_inner(tus[GPU].rsp_buf);
-//         cout << "TU_GPU put rsp to bus---" << endl;
+//         std::cout << "TU_GPU put rsp to bus---" << std::endl;
 //         break;
 //     case ACC:
 //         put_rsp_inner(tus[ACC].rsp_buf);
-//         cout << "TU_ACC put rsp to bus---" << endl;
+//         std::cout << "TU_ACC put rsp to bus---" << std::endl;
 //         break;
 //     default:
 //         break;
@@ -253,10 +254,11 @@ void put_rsp(std::vector<MSG> &rsp)
 
 void RspCoalesce(std::vector<MSG> &buf)
 {
-    int len = buf.size();
-    for (int i = 0; i < len - 1; i++)
+    // int len = buf.size();
+    // 不应该用固定长度的len!!!!!!!!!!!!!!!!!!!!
+    for (int i = 0; i < buf.size() - 1; i++)
     {
-        for (int j = i + 1; j < len; j++)
+        for (int j = i + 1; j < buf.size(); j++)
         {
             if ((buf[i].id == buf[j].id) && (buf[i].dest == buf[j].dest) && (buf[i].addr == buf[j].addr) && (buf[i].msg == buf[j].msg))
             {
@@ -265,9 +267,13 @@ void RspCoalesce(std::vector<MSG> &buf)
             }
         }
     }
+    for (int i = 0; i < buf.size(); i++)
+    {
+        buf[i].ok_mask = ~buf[i].mask;
+    }
 }
 
-void buf_inner(std::vector<MSG> &buf)
+void buf_brief(std::vector<MSG> &buf)
 {
     int len = buf.size();
     for (int i = 0; i < len; i++)
@@ -279,17 +285,32 @@ void buf_inner(std::vector<MSG> &buf)
 
 void buf_display()
 {
-    std::cout << "-------------BUF_DISPLAY---------------" << endl;
-    // std::cout << "--BUS--|--LLC--|--CPU--|--ACC--|--GPU--" << endl;
-    std::cout << "--BUS--" << endl;
-    buf_inner(bus);
-    std::cout << "--LLC--" << endl;
-    buf_inner(llc.req_buf);
-    std::cout << "--CPU--" << endl;
-    buf_inner(tus[CPU].req_buf);
-    std::cout << "--GPU--" << endl;
-    buf_inner(tus[GPU].req_buf);
-    std::cout << "--ACC--" << endl;
-    buf_inner(tus[ACC].req_buf);
-    std::cout << "---------------------------------------" << endl;
+    std::cout << "-------------BUF_DISPLAY---------------" << std::endl;
+    // std::cout << "--BUS--|--LLC--|--CPU--|--ACC--|--GPU--" << std::endl;
+    std::cout << "--BUS--" << std::endl;
+    buf_brief(bus);
+    std::cout << "--LLC--" << std::endl;
+    buf_brief(llc.req_buf);
+    std::cout << "--CPU--" << std::endl;
+    buf_brief(tus[CPU].req_buf);
+    std::cout << "--GPU--" << std::endl;
+    buf_brief(tus[GPU].req_buf);
+    std::cout << "--ACC--" << std::endl;
+    buf_brief(tus[ACC].req_buf);
+    std::cout << "---------------------------------------" << std::endl;
+}
+
+void buf_detailed(std::vector<MSG> &buf)
+{
+    std::cout << "---------------BUF_DETAILED_INFO---------------" << std::endl;
+    int len = buf.size();
+    if (!len)
+    {
+        std::cout << "Nothing in the buffer!" << std::endl;
+    }
+    for (int i = 0; i < len; i++)
+    {
+        buf[i].msg_display();
+    }
+    std::cout << "-----------------------------------------------" << std::endl;
 }

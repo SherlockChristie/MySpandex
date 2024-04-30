@@ -132,6 +132,7 @@ struct MSG
         std::cout << "MSG_DISPLAY----------------------------" << endl;
         std::cout << "id: " << id << std::endl;
         std::cout << "mask: " << mask << std::endl;
+        std::cout << "src: " << dev_which(src.to_ulong()) << std::endl;
         std::cout << "dest: " << dest << std::endl;
         std::cout << "addr: " << addr << std::endl;
         std::cout << "msg: " << msg_which(msg) << std::endl;

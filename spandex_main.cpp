@@ -168,11 +168,16 @@ void do_c()
         {
             devs[GPU].req_buf.push_back(Req_001);
             tus[GPU].mapping_wrapper(devs[GPU]);
+            get_msg();
+            llc.rcv_req();
+            // get_msg();
         }
-        get_msg(); // 上升沿get_msg();
-        llc.rcv_req();
-        tus[ACC].rcv_fwd();
-        get_msg(); // 下降沿get_msg();
+        if (time == 2)
+        {
+            get_msg();
+            tus[ACC].rcv_fwd();
+            get_msg();
+        }
     }
 }
 
@@ -224,8 +229,8 @@ int main()
     // reset;
     init();
 
-    // do_a();
-    do_b();
+    do_a();
+    // do_b();
     // do_c();
     // do_d();
     return 0;

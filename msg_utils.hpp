@@ -52,7 +52,8 @@ void put_rsp(std::vector<MSG> &rsp);
 // }
 
 void RspCoalesce(std::vector<MSG> &buf);
-void buf_inner(std::vector<MSG> &buf);
+void buf_brief(std::vector<MSG> &buf);
 void buf_display();
+void buf_detailed(std::vector<MSG> &buf);
 
 #endif // MSG_UTILS_HPP

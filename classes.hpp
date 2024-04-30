@@ -113,7 +113,7 @@ public:
     DATA_WORD tu_word;
 
     // void msg_init();
-    void tst();
+    // void tst();
     void req_mapping(unsigned long id, MSG &dev_req);
     void state_mapping(unsigned long id, DATA_LINE &data_line, DATA_WORD &data_word);
     void mapping_wrapper(DEV &dev);

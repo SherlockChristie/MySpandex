@@ -73,6 +73,7 @@ bool LLC::fetch_line()
 void LLC::back_line(DATA_LINE &llc_data)
 {
     unsigned long llc_index = (llc_addr.index).to_ulong();
+    LineCopy(cache[llc_index], llc_data.data);
     line_state_buf[llc_index] = llc_data.line_state;
     word_state_buf[llc_index] = llc_data.word_state;
     sharers_buf[llc_index] = llc_data.sharers;
@@ -112,10 +113,10 @@ void LLC::rcv_req_single(MSG &tu_req, unsigned long offset, DATA_LINE &llc_data)
     // fetch_line(llc_addr, llc_data);
     // msg_init();
 
-    unsigned long id_int = tu_req.src.to_ulong();
+    unsigned long req_id_int = tu_req.src.to_ulong();
     gen.id = tu_req.id;
     gen.src = tu_req.src;
-    gen.dest.set(id_int);
+    gen.dest.set(req_id_int);
     // cout<<"dest ok "<<offset<<endl;
     // Default destination: the requestor.
     // gen.mask.set(offset.to_ulong());
@@ -157,13 +158,15 @@ void LLC::rcv_req_single(MSG &tu_req, unsigned long offset, DATA_LINE &llc_data)
                 gen.msg = FWD_REQ_V;
                 gen.dest.reset(); // 清除原本的默认设置: dest = reqor;
                 gen.dest.set(FindOwner(llc_data).to_ulong());
+                // cout << "Really gen a fwd!!!!" << endl;
+                // gen.msg_display();
             };
             break;
         }
         case REQ_S:
             // REQS2 not used;
             {
-                llc_data.sharers.set(id_int); // Update the sharers list.
+                llc_data.sharers.set(req_id_int); // Update the sharers list.
                 // cout<<"sharers ok"<<endl;
                 if (data.state == SPX_S) // REQS1;
                 {
@@ -182,8 +185,10 @@ void LLC::rcv_req_single(MSG &tu_req, unsigned long offset, DATA_LINE &llc_data)
                         // Pay attetion: Unstable state go to the req triggers it!!!!!!!!!!!!!!!
                         gen.msg = FWD_REQ_S;
                     }
+                    // 对于任何引起到O状态的转移，都应该同步更新数据域内容为所有者id!!!!!!!!!
                     else // REQS3;
                     {
+                        data.data[0] = req_id_int;
                         data.state = SPX_O;
                         gen.msg = FWD_REQ_Odata;
                     }
@@ -191,6 +196,7 @@ void LLC::rcv_req_single(MSG &tu_req, unsigned long offset, DATA_LINE &llc_data)
                 // REQS3;
                 else if (data.state == SPX_V)
                 {
+                    data.data[0] = req_id_int;
                     data.state = SPX_O;
                     gen.msg = RSP_S;
                 }
@@ -241,6 +247,7 @@ void LLC::rcv_req_single(MSG &tu_req, unsigned long offset, DATA_LINE &llc_data)
             else if (data.state == SPX_V || data.state == SPX_I)
             {
                 gen.msg = RSP_O;
+                data.data[0] = req_id_int;
                 data.state = SPX_O;
             }
             break;
@@ -284,6 +291,7 @@ void LLC::rcv_req_single(MSG &tu_req, unsigned long offset, DATA_LINE &llc_data)
             else if (data.state == SPX_V)
             {
                 // no blocking states;
+                data.data[0] = req_id_int;
                 data.state = SPX_O;
                 gen.msg = RSP_Odata;
             }
@@ -328,12 +336,13 @@ void LLC::rcv_req_single(MSG &tu_req, unsigned long offset, DATA_LINE &llc_data)
         }
     }
 
-    gen.ok_mask = ~gen.mask;
+    // gen.ok_mask = ~gen.mask;
     WordIns(data, llc_data, offset);
-    back_line(llc_data);
+    // back_line(llc_data);
     // std::cout << word_state_buf[0xCF] << std::endl;
     // Save changed word data state back;
     rsp_buf.push_back(gen);
+    // buf_detailed(rsp_buf);
 }
 
 // void LLC::rcv_req_word(id_num_t tu_id, MSG &tu_req)
@@ -368,8 +377,13 @@ void LLC::rcv_req_inner(MSG &tu_req, int k)
         }
         // rsp_buf.push_back(rcv_req(tu_id, tu_req, bitset<WORDS_OFF>(i), llc_data));
     }
-    // rsp 不需要 ok_mask;
+    back_line(llc_line);
+
+    // cout << "Before RspCoalesce!!!!!" << endl;
+    // buf_detailed(rsp_buf);
     RspCoalesce(rsp_buf);
+    // cout << "After RspCoalesce!!!!!" << endl;
+    // buf_detailed(rsp_buf);
     bool is_rsp = 0;
     for (int i = 0; i < rsp_buf.size(); i++)
     {
@@ -382,7 +396,9 @@ void LLC::rcv_req_inner(MSG &tu_req, int k)
         }
     }
     if (!is_rsp) // 对于 rsp 和 fwd 都有的情况，req_buf也已经出队了;
+    {
         cout << "LLC put a fwd to bus---" << endl;
+    }
     put_rsp(rsp_buf);
     //}
     // else // the whole line only have 1 rsp;
@@ -401,7 +417,7 @@ void LLC::rcv_req()
 {
     int old_unstable = 0;
     int len = req_buf.size() - 1;
-    cout << "REQ BUF LEN A: " << len + 1 << endl;
+    // cout << "REQ BUF LEN A: " << len + 1 << endl;
     for (int k = len; k >= 0; k--)
     {
         // MSG tu_req = req_buf[k];
@@ -418,7 +434,7 @@ void LLC::rcv_req()
         }
     }
     // 先从后往前处理新入队的，如果新入队的操作使得阻塞状态变为非阻塞状态了，再次处理阻塞状态的req;
-    cout << "Old_unstable count: " << old_unstable << endl;
+    // cout << "Old_unstable count: " << old_unstable << endl;
     for (int i = 0; i < old_unstable; i++)
     {
         rcv_req_inner(req_buf[i], i);
@@ -446,8 +462,8 @@ void LLC::solve_pending_ReqWB(id_num_t tu_id)
 {
     MSG gen = req_buf.front();
     gen.msg = RSP_NACK; // 撤销此请求，不再是所有者;
-    unsigned long id_int = tu_id.to_ulong();
-    gen.dest.set(id_int);
+    unsigned long req_id_int = tu_id.to_ulong();
+    gen.dest.set(req_id_int);
 
     req_buf.erase(req_buf.begin()); // pop out llc's ReqWB;
     bus.push_back(gen);             // bus to pop out tu's ReqWB;
