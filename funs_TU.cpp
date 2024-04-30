@@ -605,7 +605,7 @@ void TU::rcv_fwd()
             rcv_fwd_single(fwd_in, i);
         }
     }
-    RspCoalesce(rsp_buf);
+    RspCoalesce(rsp_buf, tu_line);
     if (down.any())
     {
         MSG gen_req;

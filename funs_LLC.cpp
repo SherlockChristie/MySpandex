@@ -117,7 +117,6 @@ void LLC::rcv_req_single(MSG &tu_req, unsigned long offset, DATA_LINE &llc_data)
     gen.id = tu_req.id;
     gen.src = tu_req.src;
     gen.dest.set(req_id_int);
-    // cout<<"dest ok "<<offset<<endl;
     // Default destination: the requestor.
     // gen.mask.set(offset.to_ulong());
     gen.addr = tu_req.addr;
@@ -125,11 +124,11 @@ void LLC::rcv_req_single(MSG &tu_req, unsigned long offset, DATA_LINE &llc_data)
     gen.gran = GRAN_WORD;
     // Default LLC granularity: word.
     gen.mask.set(offset);
-    // cout<<"mask ok"<<endl;
     // Default mask.
-    gen.data_line = llc_data;
-    gen.data_word = data;
+    // gen.data_line = llc_data;
+    // gen.data_word = data;
     // Default data.
+    // Shoule be decided at the end since data may be changed.
     // msg and u_state is decided below.
 
     // if (!llc_data.hit)
@@ -347,8 +346,8 @@ void LLC::rcv_req_single(MSG &tu_req, unsigned long offset, DATA_LINE &llc_data)
 
     // gen.ok_mask = ~gen.mask;
     WordIns(data, llc_data, offset);
-    // back_line(llc_data);
-    // std::cout << word_state_buf[0xCF] << std::endl;
+    // gen.data_line = llc_data;
+    gen.data_word = data;
     // Save changed word data state back;
     rsp_buf.push_back(gen);
     // buf_detailed(rsp_buf);
@@ -390,7 +389,7 @@ void LLC::rcv_req_inner(MSG &tu_req, int k)
 
     // cout << "Before RspCoalesce!!!!!" << endl;
     // buf_detailed(rsp_buf);
-    RspCoalesce(rsp_buf);
+    RspCoalesce(rsp_buf, llc_line);
     // cout << "After RspCoalesce!!!!!" << endl;
     // buf_detailed(rsp_buf);
     bool is_rsp = 0;

@@ -251,7 +251,7 @@ void put_rsp(std::vector<MSG> &rsp)
 //     return 0;
 // }
 
-void RspCoalesce(std::vector<MSG> &buf)
+void RspCoalesce(std::vector<MSG> &buf, DATA_LINE &new_data)
 {
     // int len = buf.size();
     // 不应该用固定长度的len!!!!!!!!!!!!!!!!!!!!
@@ -262,6 +262,8 @@ void RspCoalesce(std::vector<MSG> &buf)
             if ((buf[i].id == buf[j].id) && (buf[i].dest == buf[j].dest) && (buf[i].addr == buf[j].addr) && (buf[i].msg == buf[j].msg))
             {
                 buf[i].mask |= buf[j].mask;
+                // WordIns(buf[j].data_word,buf[i].data_line,buf[j].mask.to_ulong());
+                // // buf[j].mask 应当只有一位，不会出错;
                 buf.erase(buf.begin() + j);
             }
         }
@@ -269,6 +271,7 @@ void RspCoalesce(std::vector<MSG> &buf)
     for (int i = 0; i < buf.size(); i++)
     {
         buf[i].ok_mask = ~buf[i].mask;
+        buf[i].data_line = new_data;
     }
 }
 
