@@ -4,11 +4,14 @@
 #include "classes.hpp"
 #include "bit_utils.hpp"
 #include "msg_utils.hpp"
-// #include <vector>
 using namespace std;
 
 // TODO: 用 fetch_line() 和 back_line() 函数初始化而不是手动;
 // TODO: ReqWB 应该留在 tu 的 req_buf 内；fwd 应该留在 LLC 的 req_buf 内;
+// TODO: 用 Makefile 编译文件而非 run code;
+// 有时候会出现奇怪的无法运行 bug: tempCodeRunnerFile.cpp:1:13: error: expected constructor, destructor, or type conversion before '(' token
+// link funs_xxx.cpp(3个) to classes.hpp(1个);
+// TODO: 负载发出的字粒度请求应当是纯“字粒度”的（通过word_offset标识），然后对于同一行的同类型字粒度请求，由 Spandex 合并为一个 multi-word req;
 
 // 将下面几个设置为工程全局变量;
 std::vector<MSG> bus;
@@ -17,6 +20,21 @@ TU tus[MAX_DEVS];
 LLC llc;
 
 MSG Req_001, Req_002, Req_003;
+
+// TODO: 也清除内存;
+void reset()
+{
+    for (int i = 0; i < MAX_DEVS; i++)
+    {
+        devs[i].req_buf.clear();
+        devs[i].rsp_buf.clear();
+        tus[i].req_buf.clear();
+        tus[i].rsp_buf.clear();
+    }
+    llc.req_buf.clear();
+    llc.rsp_buf.clear();
+    bus.clear();
+}
 
 void init()
 {
@@ -149,9 +167,21 @@ void do_b()
             tus[GPU].mapping_wrapper(devs[GPU]);
         }
         get_msg();
+        // buf_detailed(bus);
+        // buf_detailed(llc.req_buf);
+        // buf_detailed(llc.rsp_buf);
         llc.rcv_req();
         get_msg();
-        if (time == 1) tus[ACC].rcv_fwd();
+        if (time == 1)
+        {
+            buf_detailed(bus);
+            buf_detailed(llc.req_buf);
+            buf_detailed(llc.rsp_buf);
+            tus[ACC].rcv_fwd();
+            buf_detailed(bus);
+            buf_detailed(llc.req_buf);
+            buf_detailed(llc.rsp_buf);
+        }
 
         // cout << "------ LLC TEST -------" << endl;
         // int len = llc.req_buf.size();
@@ -269,7 +299,7 @@ void do_d()
 
 int main()
 {
-    // reset;
+    reset();
     init();
 
     // Just uncomment the following lines to see the corresponding case.

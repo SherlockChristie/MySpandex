@@ -118,11 +118,17 @@ void get_msg()
     while (!bus.empty())
     {
         MSG tmp = bus.front();
+        cout<<"OK a bus~~~~~~~~~~~~~"<<endl;
+        tmp.msg_display();
         if (tmp.msg < RSP_S) // req or fwd
         {
             if (tmp.dest.test(0))
             {
+                cout<<"Before req_buf push"<<endl;
+                buf_detailed(llc.req_buf);
                 llc.req_buf.push_back(tmp);
+                cout<<"After req_buf push"<<endl;
+                buf_detailed(llc.req_buf);
                 std::cout << "---   LLC get a req from bus---" << std::endl;
             }
             if (tmp.dest.test(1))
@@ -175,6 +181,7 @@ void get_msg()
             }
         }
         bus.erase(bus.begin());
+        buf_detailed(bus);
     }
     buf_display();
 }
@@ -260,7 +267,7 @@ void put_rsp(std::vector<MSG> &rsp)
 //     return 0;
 // }
 
-void RspCoalesce(std::vector<MSG> &buf, DATA_LINE &new_data)
+void MsgCoalesce(std::vector<MSG> &buf, DATA_LINE &new_data)
 {
     // int len = buf.size();
     // 不应该用固定长度的len!!!!!!!!!!!!!!!!!!!!
@@ -323,5 +330,5 @@ void buf_detailed(std::vector<MSG> &buf)
     {
         buf[i].msg_display();
     }
-    std::cout << "---------------------------------------------------------" << std::endl;
+    std::cout << "--------------------------------------------------------" << std::endl;
 }

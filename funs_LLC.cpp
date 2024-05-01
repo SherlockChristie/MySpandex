@@ -388,10 +388,10 @@ void LLC::rcv_req_inner(MSG &tu_req, int k)
     }
     back_line(llc_line);
 
-    // cout << "Before RspCoalesce!!!!!" << endl;
+    // cout << "Before MsgCoalesce!!!!!" << endl;
     // buf_detailed(rsp_buf);
-    RspCoalesce(rsp_buf, llc_line);
-    // cout << "After RspCoalesce!!!!!" << endl;
+    MsgCoalesce(rsp_buf, llc_line);
+    // cout << "After MsgCoalesce!!!!!" << endl;
     // buf_detailed(rsp_buf);
     bool is_rsp = 0;
     for (int i = 0; i < rsp_buf.size(); i++)
@@ -425,6 +425,8 @@ void LLC::rcv_req_inner(MSG &tu_req, int k)
 void LLC::rcv_req()
 // LLC is always word granularity; if receive a line granularity request, breakdown into word granularity;
 {
+    cout << "OK here!!!!!! What's the req_buf?" << endl;
+    buf_detailed(req_buf);
     int old_unstable = 0;
     int len = req_buf.size() - 1;
     // cout << "REQ BUF LEN A: " << len + 1 << endl;
@@ -442,7 +444,7 @@ void LLC::rcv_req()
         {
             rcv_req_inner(req_buf[k], k);
         }
-        buf_detailed(req_buf);
+        // buf_detailed(req_buf);
     }
     // 先从后往前处理新入队的，如果新入队的操作使得阻塞状态变为非阻塞状态了，再次处理阻塞状态的req;
     // cout << "Old_unstable count: " << old_unstable << endl;

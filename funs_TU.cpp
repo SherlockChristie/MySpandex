@@ -1,4 +1,6 @@
 // TODO: 修改不在预期状态的 FWD_INV;
+// TODO: down 应该是每个地址一个;如果req的请求地址不同的话，不应该有冲突;
+// 设置 mask_t down[MAX_MSG]; ?
 #include "blocks.hpp"
 #include "classes.hpp"
 #include "bit_utils.hpp"
@@ -604,7 +606,7 @@ void TU::rcv_fwd()
             rcv_fwd_single(fwd_in, i);
         }
     }
-    RspCoalesce(rsp_buf, tu_line);
+    MsgCoalesce(rsp_buf, tu_line);
     if (down.any())
     {
         MSG gen_req;

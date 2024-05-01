@@ -1,6 +1,7 @@
 #ifndef MSG_UTILS_HPP
 #define MSG_UTILS_HPP
 
+#include "headers.hpp"
 #include "bit_utils.hpp"
 #include "blocks.hpp"
 #include "consts.hpp"
@@ -51,7 +52,7 @@ void put_rsp(std::vector<MSG> &rsp);
 //     return 0;
 // }
 
-void RspCoalesce(std::vector<MSG> &buf, DATA_LINE &new_data);
+void MsgCoalesce(std::vector<MSG> &buf, DATA_LINE &new_data);
 void buf_brief(std::vector<MSG> &buf);
 void buf_display();
 void buf_detailed(std::vector<MSG> &buf);
