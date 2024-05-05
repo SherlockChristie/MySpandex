@@ -3,11 +3,17 @@
         {
             "type": "cppbuild",
             "label": "C/C++: gcc.exe 生成活动文件",
-            "command": "C:\\MinGW\\bin\\gcc.exe",
+            "command": "C:\\MinGW\\bin\\g++.exe",
             "args": [
                 "-fdiagnostics-color=always",
                 "-g",
                 "${file}",
+                "${fileDirname}\\bit_utils.cpp",
+                "${fileDirname}\\blocks.cpp",
+                "${fileDirname}\\funs_DEV.cpp",
+                "${fileDirname}\\funs_LLC.cpp",
+                "${fileDirname}\\funs_TU.cpp",
+                "${fileDirname}\\msg_utils.cpp",
                 "-o",
                 "${fileDirname}\\${fileBasenameNoExtension}.exe"
             ],

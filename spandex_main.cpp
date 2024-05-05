@@ -174,13 +174,13 @@ void do_b()
         get_msg();
         if (time == 1)
         {
-            buf_detailed(bus);
-            buf_detailed(llc.req_buf);
-            buf_detailed(llc.rsp_buf);
+            // buf_detailed(bus);
+            // buf_detailed(llc.req_buf);
+            // buf_detailed(llc.rsp_buf);
             tus[ACC].rcv_fwd();
-            buf_detailed(bus);
-            buf_detailed(llc.req_buf);
-            buf_detailed(llc.rsp_buf);
+            // buf_detailed(bus);
+            // buf_detailed(llc.req_buf);
+            // buf_detailed(llc.rsp_buf);
         }
 
         // cout << "------ LLC TEST -------" << endl;
@@ -307,5 +307,6 @@ int main()
     do_b();
     // do_c();
     // do_d();
+ 
     return 0;
 }

@@ -1,8 +1,6 @@
 #ifndef __BLOCKS_HPP__
 #define __BLOCKS_HPP__
 
-// TODO: msg.display() 不显示数字而显示字符串;
-
 #include "headers.hpp"
 #include "consts.hpp"
 using namespace std;
