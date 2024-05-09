@@ -74,6 +74,17 @@ constexpr int lg2(int x)
 
 #define MAX_MSG 8 // Maximum message waiting to be processed;
 
+// Latency parameters
+#define TIME_L1 1
+#define TIME_L1_RMT 59 // Average cycles for remote L1 hit latency.
+#define TIME_L2_MIN 29
+#define TIME_L2_MAX 61
+#define TIME_L2_AVG 45
+// #define TIME_L3_CPU_MIN 29
+// #define TIME_L3_CPU_MAX 61
+#define TIME_L3_GPU_MIN 52
+#define TIME_L3_GPU_MAX 100
+
 // Granularity type
 #define GRAN_WORD 0
 #define GRAN_LINE 1

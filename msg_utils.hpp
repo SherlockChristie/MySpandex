@@ -13,7 +13,8 @@
 
 int find_conflict(std::vector<MSG> &req_buf);
 void rcv_rsp_single(MSG &rsp_in, unsigned long offset, DATA_LINE &data_line);
-void get_rsp(MSG rsp, std::vector<MSG> &req_buf, id_num_t id);
+void rcv_rsp_inner(MSG &rsp_in, DATA_LINE &data_line);
+void get_rsp(MSG &rsp, std::vector<MSG> &req_buf, id_num_t id, bool is_tu);
 void get_msg();
 // void put_req(std::vector<MSG> &req)
 // // Put all the req_buf to the bus.

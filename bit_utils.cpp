@@ -89,7 +89,7 @@ void WordIns(DATA_WORD &word, DATA_LINE &line, unsigned long offset)
     if (word.state == SPX_O)
         // if (word.state == DEV_O || word.state == LLC_O)
         // won't have problem since both DEV_O and LLC_O are 2;
-        // bool is_dev not needed;
+        // bool is_tu not needed;
         line.word_state.set(offset);
     else
     {

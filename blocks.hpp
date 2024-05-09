@@ -132,6 +132,8 @@ struct MSG
     DATA_LINE data_line;
     DATA_WORD data_word;
     int retry_times = 0;
+    int time_hm = 0; // The simulator to record the latency for H-MESI.
+    int time_sp = 0; // The simulator to record the latency for Spandex.
 
     void msg_display()
     {
@@ -151,6 +153,8 @@ struct MSG
         data_line.line_display();
         data_word.word_display();
         std::cout << "retry_times: " << retry_times << std::endl;
+        std::cout << "H-MESI: " << time_hm << std::endl;
+        std::cout << "Spandex: " << time_sp << std::endl;
         std::cout << "-----------------------------------------------------" << endl;
     }
 };

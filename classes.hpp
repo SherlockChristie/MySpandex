@@ -123,6 +123,7 @@ public:
     // void gen_ReqWB(unsigned long offset);
     void rcv_fwd_single(MSG &fwd_in, unsigned long offset);
     void rcv_fwd();
+    void rcv_rsp(MSG &rsp_in);
     // void tu_for_gpu();
     // void tu_for_acc();
     // void tu_for_cpu(TU &sender);
@@ -144,6 +145,8 @@ public:
     spx_word_state_t word_state_buf[LLC_ROW];
     llc_tag_t tag_buf[LLC_ROW];
     id_bit_t sharers_buf[LLC_ROW];
+    int wait_hm = 0;
+    int wait_sp = 0;
 
     // void msg_init();
     void breakdown(addr_t addr);

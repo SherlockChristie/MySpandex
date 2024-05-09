@@ -7,7 +7,7 @@
 using namespace std;
 
 // TODO: 用 fetch_line() 和 back_line() 函数初始化而不是手动;
-// TODO: ReqWB 应该留在 tu 的 req_buf 内；fwd 应该留在 LLC 的 req_buf 内;
+// TODO: 现在 LLC 的 wait_time是统一的，但实际上应该不是;
 // TODO: 用 Makefile 编译文件而非 run code;
 // 有时候会出现奇怪的无法运行 bug: tempCodeRunnerFile.cpp:1:13: error: expected constructor, destructor, or type conversion before '(' token
 // link funs_xxx.cpp(3个) to classes.hpp(1个);
@@ -19,7 +19,7 @@ DEV devs[MAX_DEVS];
 TU tus[MAX_DEVS];
 LLC llc;
 
-MSG Req_001, Req_002, Req_003;
+MSG Req_001, Req_002, Req_003, Req_004;
 
 // TODO: 也清除内存;
 void reset()
@@ -74,6 +74,8 @@ void init_a()
     // no need for a DEV req to determine dest; always LLC; determined in tu.req_mapping();
     Req_001.addr = 0x66CCFF;
     Req_001.msg = WRITE;
+    Req_001.time_sp = TIME_L1;
+    Req_001.time_hm = TIME_L1;
     // gran/ok_mask also determined in tu.req_mapping();
     // u_state/retry_times determined in ?;
     // no data_line/data_word needed;
@@ -84,6 +86,8 @@ void init_a()
     Req_002.mask = 0x5; // 0b0101
     Req_002.addr = 0x66CCFF;
     Req_002.msg = WRITE;
+    Req_002.time_sp = TIME_L1;
+    Req_002.time_hm = TIME_L1;
     // Req_002.msg_display();
     // ------------------------------------
 }
@@ -91,16 +95,16 @@ void init_a()
 void do_a()
 {
     init_a();
-    int time = 0;
-    for (time = 1; time < 3; time++)
+    int step = 0;
+    for (step = 1; step < 3; step++)
     {
-        cout << "Timing: " << time << endl;
-        if (time == 1)
+        cout << "Steps: " << step << endl;
+        if (step == 1)
         {
             devs[ACC].req_buf.push_back(Req_001);
             tus[ACC].mapping_wrapper(devs[ACC]);
         }
-        else if (time == 2)
+        else if (step == 2)
         {
             devs[GPU].req_buf.push_back(Req_002);
             tus[GPU].mapping_wrapper(devs[GPU]);
@@ -150,6 +154,8 @@ void init_b()
     // no need for a DEV req to determine dest; always LLC; determined in tu.req_mapping();
     Req_003.addr = 0x39C5BB;
     Req_003.msg = RMW;
+    Req_003.time_sp = TIME_L1;
+    Req_003.time_hm = TIME_L1;
     // Req_003.msg_display();
     // ------------------------------------
 }
@@ -157,11 +163,11 @@ void init_b()
 void do_b()
 {
     init_b();
-    int time = 0;
-    for (time = 1; time < 3; time++)
+    int step = 0;
+    for (step = 1; step < 3; step++)
     {
-        cout << "Timing: " << time << endl;
-        if (time == 1)
+        cout << "Steps: " << step << endl;
+        if (step == 1)
         {
             devs[GPU].req_buf.push_back(Req_003);
             tus[GPU].mapping_wrapper(devs[GPU]);
@@ -172,7 +178,7 @@ void do_b()
         // buf_detailed(llc.rsp_buf);
         llc.rcv_req();
         get_msg();
-        if (time == 1)
+        if (step == 1)
         {
             // buf_detailed(bus);
             // buf_detailed(llc.req_buf);
@@ -201,10 +207,12 @@ void init_c()
 
     // Req init;
     // ReqV;
-    Req_001.id = 4;
-    Req_001.addr = 0x66CCFF;
-    Req_001.msg = READ;
-    // Req_001.msg_display();
+    Req_004.id = 4;
+    Req_004.addr = 0x66CCFF;
+    Req_004.msg = READ;
+    Req_004.time_sp = TIME_L1;
+    Req_004.time_hm = TIME_L1;
+    // Req_004.msg_display();
     // ------------------------------------
 }
 
@@ -217,19 +225,19 @@ void do_c()
     cout << "--------------------------------- do_c() below -------------------------------" << endl;
 
     init_c();
-    int time = 0;
-    for (time = 1; time < 3; time++)
+    int step = 0;
+    for (step = 1; step < 3; step++)
     {
-        cout << "Timing: " << time << endl;
-        if (time == 1)
+        cout << "Steps: " << step << endl;
+        if (step == 1)
         {
-            devs[GPU].req_buf.push_back(Req_001);
+            devs[GPU].req_buf.push_back(Req_004);
             tus[GPU].mapping_wrapper(devs[GPU]);
             get_msg();
             llc.rcv_req();
             // get_msg();
         }
-        if (time == 2)
+        if (step == 2)
         {
             get_msg();
             tus[ACC].rcv_fwd();
@@ -273,6 +281,8 @@ void init_d()
     Req_001.mask = 0x5; // 0b0101
     Req_001.addr = 0xDEADBEEF;
     Req_001.msg = WRITE;
+    Req_001.time_sp = TIME_L1;
+    Req_001.time_hm = TIME_L1;
     // Req_001.msg_display();
     // ------------------------------------
 }
@@ -280,11 +290,11 @@ void init_d()
 void do_d()
 {
     init_d();
-    int time = 0;
-    for (time = 1; time < 3; time++)
+    int step = 0;
+    for (step = 1; step < 3; step++)
     {
-        cout << "Timing: " << time << endl;
-        if (time == 1)
+        cout << "Steps: " << step << endl;
+        if (step == 1)
         {
             devs[GPU].req_buf.push_back(Req_001);
             tus[GPU].mapping_wrapper(devs[GPU]);
@@ -292,7 +302,7 @@ void do_d()
         get_msg(); // 上升沿get_msg();
         llc.rcv_req();
         get_msg(); // 下降沿get_msg();
-        if (time == 1)
+        if (step == 1)
             tus[CPU].rcv_fwd();
     }
 }
@@ -307,6 +317,6 @@ int main()
     do_b();
     // do_c();
     // do_d();
- 
+
     return 0;
 }

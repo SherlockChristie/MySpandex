@@ -92,18 +92,22 @@ MSG TU::req_mapping(unsigned long id, MSG &dev_req)
     {
     case GPU:
     {
+        gen.time_hm += TIME_L2_AVG; // not hit, so use AVG instead of MIN/MAX;
         if (dev_req.msg == READ)
         {
+            // gen.time_hm += TIME_L2_MIN;
             gen.msg = REQ_V;
             gen.gran = GRAN_LINE;
         }
         else if (dev_req.msg == WRITE)
         {
+            // gen.time_hm += TIME_L2_MAX;
             gen.msg = REQ_WT;
             gen.gran = GRAN_WORD;
         }
         else if (dev_req.msg == RMW)
         {
+            // gen.time_hm += TIME_L2_MAX;
             gen.msg = REQ_WTdata;
             gen.gran = GRAN_WORD;
         }
@@ -174,10 +178,22 @@ void TU::mapping_wrapper(DEV &dev)
         dev.breakdown(tmp.addr);
         dev.fetch_line();
         data_mapping(id, dev.dev_line, dev.dev_word);
-        // std::cout << "IS LINE OK MAPPED????" << std::endl;
-        // tu_line.line_display();
+        // TIME_L2_MIN for READ, otherwise TIME_L2_MAX;
+        gen.time_sp += TIME_L2_MAX;
+        if (tu_id == GPU)
+            gen.time_hm += TIME_L3_GPU_MAX;
+        else
+            gen.time_hm += TIME_L2_MAX;
         gen.data_line = tu_line;
         gen.data_word = tu_word;
+    }
+    else
+    {
+        gen.time_sp += TIME_L2_MIN;
+        if (tu_id == GPU)
+            gen.time_hm += TIME_L3_GPU_MIN;
+        else
+            gen.time_hm += TIME_L2_MIN;
     }
 
     req_buf.push_back(gen);
@@ -266,6 +282,7 @@ void TU::mapping_wrapper(DEV &dev)
 //     down.set(offset);
 // }
 
+// 原先的版本对于有mask的fwd会重复pop_back!!!!!!!!!
 void TU::rcv_fwd_single(MSG &fwd_in, unsigned long offset)
 {
     // MSG fwd_in = req_buf.front(); // pushed in req_mapping();
@@ -300,11 +317,33 @@ void TU::rcv_fwd_single(MSG &fwd_in, unsigned long offset)
     // Default data.
     // msg and u_state is decided below.
 
+    gen_reqor.src = tu_id;
     gen_reqor.dest.set(fwd_in.src.to_ulong()); // go to reqor;
-    gen_llc = gen_reqor;                       // Default items are the same except the dest.
-    gen_llc.dest.reset();                      // really important!!!!!!!!!!!!!!!!!!
-    gen_llc.dest.set(SPX);                     // go to LLC;
-    gen_llc.msg = RSP_FWD;                     // bus to pop out llc's FWD;
+    gen_reqor.time_hm = fwd_in.time_hm + TIME_L1_RMT;
+    gen_reqor.time_sp = fwd_in.time_sp + TIME_L1_RMT;
+    if (tu_id == GPU)
+    // 假设对于 GPU, TIME_L1_RMT 是到中间层 L2;
+        gen_reqor.time_hm += TIME_L1;
+
+    gen_llc = gen_reqor;   // Default items are the same except the dest.
+    gen_llc.dest.reset();  // really important!!!!!!!!!!!!!!!!!!
+    gen_llc.dest.set(SPX); // go to LLC;
+    gen_llc.msg = RSP_FWD; // bus to pop out llc's FWD; RSP_FWD as default to indicate wrong rsp.
+    if (fwd_in.msg == FWD_REQ_Odata)
+    // only this needs data write?
+    {
+        gen_llc.time_sp = fwd_in.time_sp + TIME_L2_MAX;
+        gen_llc.time_hm = fwd_in.time_hm + TIME_L2_MAX;
+        if (tu_id == GPU)
+            gen_llc.time_hm += TIME_L3_GPU_MAX;
+    }
+    else
+    {
+        gen_llc.time_sp = fwd_in.time_sp + TIME_L2_MIN;
+        gen_llc.time_hm = fwd_in.time_hm + TIME_L2_MIN;
+        if (tu_id == GPU)
+            gen_llc.time_hm += TIME_L3_GPU_MIN;
+    }
 
     // gen_req = fwd_in;
     // gen_req.id++;
@@ -333,7 +372,8 @@ void TU::rcv_fwd_single(MSG &fwd_in, unsigned long offset)
                     else
                     {
                         gen_reqor.msg = RSP_V;
-                        req_buf.pop_back(); // pop out tu's FWD_REQ_V;
+                        // req_buf.pop_back(); // pop out tu's FWD_REQ_V;
+                        fwd_in.ok_mask.set(offset);
                     }
                 }
 
@@ -342,7 +382,7 @@ void TU::rcv_fwd_single(MSG &fwd_in, unsigned long offset)
                 // Respond immediately;
                 {
                     gen_reqor.msg = RSP_V;
-                    req_buf.pop_back();
+                    fwd_in.ok_mask.set(offset);
                 }
             }
             else
@@ -351,7 +391,7 @@ void TU::rcv_fwd_single(MSG &fwd_in, unsigned long offset)
                 // Just right in the expected state;
                 {
                     gen_reqor.msg = RSP_V;
-                    req_buf.pop_back();
+                    fwd_in.ok_mask.set(offset);
                     // data.state = SPX_O;
                     // if(tu_id == CPU) tu_for_cpu(fwd_in);
                 }
@@ -389,7 +429,7 @@ void TU::rcv_fwd_single(MSG &fwd_in, unsigned long offset)
             if (pending.u_state == DEV_XO)
             {
                 gen_reqor.msg = RSP_O;
-                req_buf.pop_back();
+                fwd_in.ok_mask.set(offset);
             }
 
             // Pending Transition from Expected State;
@@ -400,7 +440,7 @@ void TU::rcv_fwd_single(MSG &fwd_in, unsigned long offset)
                     llc.solve_pending_ReqWB(tu_id);
                     data.state = SPX_I;
                     gen_reqor.msg = RSP_O;
-                    req_buf.pop_back();
+                    fwd_in.ok_mask.set(offset);
                     // pop out FWD_REQ_O;
                     // REQ_WB waiting for RSP_NACK from LLC to pop out;
                 }
@@ -415,7 +455,7 @@ void TU::rcv_fwd_single(MSG &fwd_in, unsigned long offset)
             down.set(offset);
             data.state = SPX_I;
 
-            req_buf.pop_back();
+            fwd_in.ok_mask.set(offset);
         }
         // rsp_buf.push_back(gen_llc);
         rsp_buf.push_back(gen_reqor);
@@ -440,7 +480,7 @@ void TU::rcv_fwd_single(MSG &fwd_in, unsigned long offset)
                     llc.solve_pending_ReqWB(tu_id);
                     data.state = SPX_I;
                     gen_reqor.msg = RSP_Odata;
-                    req_buf.pop_back();
+                    fwd_in.ok_mask.set(offset);
                     // pop out FWD_REQ_O;
                     // REQ_WB waiting for RSP_NACK from LLC to pop out;
                 }
@@ -451,7 +491,7 @@ void TU::rcv_fwd_single(MSG &fwd_in, unsigned long offset)
         {
             gen_reqor.msg = RSP_Odata;
             data.state = SPX_I;
-            req_buf.pop_back();
+            fwd_in.ok_mask.set(offset);
         }
         // rsp_buf.push_back(gen_llc);
         rsp_buf.push_back(gen_reqor);
@@ -473,7 +513,7 @@ void TU::rcv_fwd_single(MSG &fwd_in, unsigned long offset)
                     llc.solve_pending_ReqWB(tu_id);
                     data.state = SPX_I;
                     gen_llc.msg = RSP_RVK_O;
-                    req_buf.pop_back();
+                    fwd_in.ok_mask.set(offset);
                 }
             }
         }
@@ -494,7 +534,7 @@ void TU::rcv_fwd_single(MSG &fwd_in, unsigned long offset)
             down.set(offset);
             data.state = SPX_I;
 
-            req_buf.pop_back();
+            fwd_in.ok_mask.set(offset);
         }
         rsp_buf.push_back(gen_llc);
         // no rsp_buf.push_back(gen_reqor);
@@ -520,13 +560,13 @@ void TU::rcv_fwd_single(MSG &fwd_in, unsigned long offset)
             {
                 gen_llc.msg = RSP_INV_ACK;
                 data.state = SPX_I;
-                req_buf.pop_back();
+                fwd_in.ok_mask.set(offset);
             }
             else
             {
                 gen_llc.msg = RSP_INV_ACK;
                 // Why?
-                req_buf.pop_back();
+                fwd_in.ok_mask.set(offset);
             }
         }
         rsp_buf.push_back(gen_llc);
@@ -549,7 +589,7 @@ void TU::rcv_fwd_single(MSG &fwd_in, unsigned long offset)
                     llc.solve_pending_ReqWB(tu_id);
                     data.state = SPX_S;
                     gen_reqor.msg = RSP_S;
-                    req_buf.pop_back();
+                    fwd_in.ok_mask.set(offset);
                 }
             }
         }
@@ -558,7 +598,7 @@ void TU::rcv_fwd_single(MSG &fwd_in, unsigned long offset)
             gen_reqor.msg = RSP_S;
             gen_llc.msg = RSP_RVK_O;
             data.state = SPX_S;
-            req_buf.pop_back();
+            fwd_in.ok_mask.set(offset);
         }
         rsp_buf.push_back(gen_llc);
         rsp_buf.push_back(gen_reqor);
@@ -607,32 +647,40 @@ void TU::rcv_fwd()
         }
     }
     MsgCoalesce(rsp_buf, tu_line);
+
+    MSG gen_req = fwd_in;
+    gen_req.msg = REQ_WB;
+    gen_req.id++;
+    gen_req.mask.reset();
+    if (rsp_buf.back().msg == RSP_RVK_O)
+        // RvkO triggers a write-back of the owned data;
+        gen_req.mask = down;
+    else
+        // triggers a write-back for the words that were not requested in the downgraded line;
+        gen_req.mask = ~down;
+    gen_req.ok_mask = ~gen_req.mask;
+    gen_req.src = tu_id;
+    gen_req.dest.reset();
+    gen_req.dest.set(SPX);
+    gen_req.data_line = tu_line;
+    gen_req.retry_times = 0;
+    gen_req.time_hm = TIME_L1 + TIME_L2_MAX;
+    gen_req.time_sp = TIME_L1 + TIME_L2_MAX;
+    if (gen_req.src == GPU)
+        gen_req.time_hm += TIME_L3_GPU_MAX;
+
+    if (fwd_in.ok_mask.all())
+    {
+        req_buf.pop_back();
+    }
+
     if (down.any())
     {
-        MSG gen_req;
-        gen_req = fwd_in;
-        gen_req.msg = REQ_WB;
-        gen_req.id++;
-        gen_req.mask.reset();
-        if (rsp_buf.back().msg == RSP_RVK_O)
-        // RvkO triggers a write-back of the owned data;
-            gen_req.mask = down;
-        else
-        // triggers a write-back for the words that were not requested in the downgraded line;
-            gen_req.mask = ~down;
-        gen_req.ok_mask = ~gen_req.mask;
-        gen_req.src = tu_id;
-        gen_req.dest.reset();
-        gen_req.dest.set(SPX);
-        gen_req.data_line = tu_line;
-        gen_req.retry_times = 0;
-        // 无论是 push_back() 还是 emplace_back() 都会删除传入的元素，会导致 req_buf 没东西;
-        // TODO: ???????? 为什么还是不行;
-        MSG gen_req_2 = gen_req;
+        req_buf.push_back(gen_req); // waiting for rsp from the bus;
         rsp_buf.push_back(gen_req);
-        req_buf.push_back(gen_req_2); // waiting for rsp from the bus;
         down.reset();
     }
+
     std::cout << "---TU_" << dev_which(id) << " put rsp to bus---" << std::endl;
     put_rsp(rsp_buf);
 }
@@ -661,3 +709,12 @@ void TU::rcv_fwd()
 //     // else if (fwd_in.msg == REQ_V|| fwd_in.msg == REQ_S||fwd_in.msg == REQ_Odata||fwd_in.msg == FWD_RVK_O)
 //     // Case 3: Pending write-back;
 // }
+
+void TU::rcv_rsp(MSG &rsp_in)
+{
+    unsigned long id = tu_id.to_ulong();
+    devs[id].breakdown(rsp_in.addr);
+    devs[id].fetch_line();
+    rcv_rsp_inner(rsp_in, tu_line);
+    get_rsp(rsp_in, req_buf, tu_id, 1);
+}
