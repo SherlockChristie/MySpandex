@@ -7,11 +7,13 @@
 using namespace std;
 
 // TODO: 用 fetch_line() 和 back_line() 函数初始化而不是手动;
-// TODO: 现在 LLC 的 wait_time是统一的，但实际上应该不是;
+// TODO: 现在 LLC 的 wait_time 是统一的，但实际上应该不是(不同的 pending req 应该在不同时候触发开始，现在都是等无需 pending 的 req 处理完后开始);
 // TODO: 用 Makefile 编译文件而非 run code;
 // 有时候会出现奇怪的无法运行 bug: tempCodeRunnerFile.cpp:1:13: error: expected constructor, destructor, or type conversion before '(' token
 // link funs_xxx.cpp(3个) to classes.hpp(1个);
 // TODO: 负载发出的字粒度请求应当是纯“字粒度”的（通过word_offset标识），然后对于同一行的同类型字粒度请求，由 Spandex 合并为一个 multi-word req;
+// TODO: add case e. 测试 MESI 的 ReqS 及其转发功能;
+// TODO: 原来 address bus 和 data bus 应该分开实现吗！！！
 
 // 将下面几个设置为工程全局变量;
 std::vector<MSG> bus;
@@ -98,7 +100,7 @@ void do_a()
     int step = 0;
     for (step = 1; step < 3; step++)
     {
-        cout << "Steps: " << step << endl;
+        cout << "Phase: " << step << endl;
         if (step == 1)
         {
             devs[ACC].req_buf.push_back(Req_001);
@@ -166,7 +168,7 @@ void do_b()
     int step = 0;
     for (step = 1; step < 3; step++)
     {
-        cout << "Steps: " << step << endl;
+        cout << "Phase: " << step << endl;
         if (step == 1)
         {
             devs[GPU].req_buf.push_back(Req_003);
@@ -228,7 +230,7 @@ void do_c()
     int step = 0;
     for (step = 1; step < 3; step++)
     {
-        cout << "Steps: " << step << endl;
+        cout << "Phase: " << step << endl;
         if (step == 1)
         {
             devs[GPU].req_buf.push_back(Req_004);
@@ -293,7 +295,7 @@ void do_d()
     int step = 0;
     for (step = 1; step < 3; step++)
     {
-        cout << "Steps: " << step << endl;
+        cout << "Phase: " << step << endl;
         if (step == 1)
         {
             devs[GPU].req_buf.push_back(Req_001);
@@ -314,8 +316,8 @@ int main()
 
     // Just uncomment the following lines to see the corresponding case.
     // do_a();
-    do_b();
-    // do_c();
+    // do_b();
+    do_c();
     // do_d();
 
     return 0;

@@ -174,22 +174,22 @@ void get_msg()
                 llc.req_buf.push_back(tmp);
                 // cout<<"After req_buf push"<<endl;
                 // buf_detailed(llc.req_buf);
-                std::cout << "---   LLC get a req from bus---" << std::endl;
+                std::cout << "---   LLC get a req from network---" << std::endl;
             }
             if (tmp.dest.test(1))
             {
                 tus[CPU].req_buf.push_back(tmp);
-                std::cout << "---TU_CPU get a req from bus---" << std::endl;
+                std::cout << "---TU_CPU get a req from network---" << std::endl;
             }
             if (tmp.dest.test(2))
             {
                 tus[GPU].req_buf.push_back(tmp);
-                std::cout << "---TU_GPU get a req from bus---" << std::endl;
+                std::cout << "---TU_GPU get a req from network---" << std::endl;
             }
             if (tmp.dest.test(3))
             {
                 tus[ACC].req_buf.push_back(tmp);
-                std::cout << "---TU_ACC get a req from bus---" << std::endl;
+                std::cout << "---TU_ACC get a req from network---" << std::endl;
             }
         }
         else // rsp;
@@ -206,23 +206,23 @@ void get_msg()
             // 无需将rsp_in入队，直接对对碰消掉req和rsp_in;
             if (tmp.dest.test(0))
             {
-                std::cout << "---   LLC get a rsp from bus---" << std::endl;
+                std::cout << "---   LLC get a rsp from network---" << std::endl;
                 llc.rcv_rsp(tmp);
             }
             if (tmp.dest.test(1))
             {
-                std::cout << "---TU_CPU get a rsp from bus---" << std::endl;
+                std::cout << "---TU_CPU get a rsp from network---" << std::endl;
                 tus[CPU].rcv_rsp(tmp);
             }
             if (tmp.dest.test(2))
             {
                 // tmp.time_hm += TIME_L2_AVG;
-                std::cout << "---TU_GPU get a rsp from bus---" << std::endl;
+                std::cout << "---TU_GPU get a rsp from network---" << std::endl;
                 tus[GPU].rcv_rsp(tmp);
             }
             if (tmp.dest.test(3))
             {
-                std::cout << "---TU_ACC get a rsp from bus---" << std::endl;
+                std::cout << "---TU_ACC get a rsp from network---" << std::endl;
                 tus[ACC].rcv_rsp(tmp);
             }
         }
@@ -271,19 +271,19 @@ void put_rsp(std::vector<MSG> &rsp)
 //     {
 //     case SPX:
 //         put_rsp_inner(llc.rsp_buf);
-//         std::cout << "LLC put rsp to bus---" << std::endl;
+//         std::cout << "LLC put rsp to network---" << std::endl;
 //         break;
 //     case CPU:
 //         put_rsp_inner(tus[CPU].rsp_buf);
-//         std::cout << "TU_CPU put rsp to bus---" << std::endl;
+//         std::cout << "TU_CPU put rsp to network---" << std::endl;
 //         break;
 //     case GPU:
 //         put_rsp_inner(tus[GPU].rsp_buf);
-//         std::cout << "TU_GPU put rsp to bus---" << std::endl;
+//         std::cout << "TU_GPU put rsp to network---" << std::endl;
 //         break;
 //     case ACC:
 //         put_rsp_inner(tus[ACC].rsp_buf);
-//         std::cout << "TU_ACC put rsp to bus---" << std::endl;
+//         std::cout << "TU_ACC put rsp to network---" << std::endl;
 //         break;
 //     default:
 //         break;
@@ -355,8 +355,8 @@ void buf_brief(std::vector<MSG> &buf)
 void buf_display()
 {
     std::cout << "---------------------BUF_DISPLAY---------------------" << std::endl;
-    // std::cout << "--BUS--|--LLC--|--CPU--|--ACC--|--GPU--" << std::endl;
-    std::cout << "--BUS--" << std::endl;
+    // std::cout << "--NET--|--LLC--|--CPU--|--ACC--|--GPU--" << std::endl;
+    std::cout << "--NET--" << std::endl;
     buf_brief(bus);
     std::cout << "--LLC--" << std::endl;
     buf_brief(llc.req_buf);

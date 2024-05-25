@@ -424,14 +424,14 @@ void LLC::rcv_req_inner(MSG &tu_req, int k)
     //     if (rsp_buf[i].id == tu_req.id)
     //     {
     //         req_buf.erase(req_buf.begin() + k);
-    //         cout << "---   LLC put rsp to bus---" << endl;
+    //         cout << "---   LLC put rsp to network---" << endl;
     //         is_rsp = 1;
     //         break;
     //     }
     // }
     // if (!is_rsp) // 对于 rsp 和 fwd 都有的情况，req_buf也已经出队了;
     // {
-    //     cout << "---   LLC put a fwd to bus---" << endl;
+    //     cout << "---   LLC put a fwd to network---" << endl;
     // }
 
     for (int i = 0; i < rsp_buf.size(); i++)
@@ -442,13 +442,13 @@ void LLC::rcv_req_inner(MSG &tu_req, int k)
         // 只会发生一次这个if? 所以不会重复erase?
         {
             req_buf.erase(req_buf.begin() + k);
-            cout << "---   LLC put rsp to bus---" << endl;
+            cout << "---   LLC put rsp to network---" << endl;
         }
         else
         {
             MSG tmp = rsp_buf[i];
             req_buf.push_back(tmp);
-            cout << "---   LLC put a fwd to bus---" << endl;
+            cout << "---   LLC put fwd to network---" << endl;
         }
     }
 

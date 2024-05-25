@@ -26,7 +26,7 @@ constexpr int lg2(int x)
     }
 }
 
-#define ADDR_SIZE 32 // 32-bit address;
+#define ADDR_SIZE 32 // 32-bit address, same with word size;
 #define BITS_PER_BYTE 8
 #define BYTES_PER_WORD 4 // int for byte, uint32_t for word;
 #define WORDS_PER_LINE 4

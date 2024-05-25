@@ -1,3 +1,5 @@
+# NOT USED.
+
 CC = g++
 
 CFLAGS = -Wall -I.

@@ -198,7 +198,7 @@ void TU::mapping_wrapper(DEV &dev)
 
     req_buf.push_back(gen);
     bus.push_back(gen);
-    std::cout << "---TU_" << dev_which(id) << " put a req to bus---" << std::endl;
+    std::cout << "---TU_" << dev_which(id) << " put a req to network---" << std::endl;
     gen.msg_display();
     buf_display();
 
@@ -527,7 +527,7 @@ void TU::rcv_fwd_single(MSG &fwd_in, unsigned long offset)
             // 或者当成 rsp 等同处理？LLC 就是这么对待 fwd 的;
             // req_buf.push_back(gen_req);
             // bus.push_back(gen_req);
-            // std::cout << "---TU_" << dev_which(tu_id.to_ulong()) << " put a req to bus---" << std::endl;
+            // std::cout << "---TU_" << dev_which(tu_id.to_ulong()) << " put a req to network---" << std::endl;
             // gen_req.msg_display();
             // buf_display();
 
@@ -681,7 +681,7 @@ void TU::rcv_fwd()
         down.reset();
     }
 
-    std::cout << "---TU_" << dev_which(id) << " put rsp to bus---" << std::endl;
+    std::cout << "---TU_" << dev_which(id) << " put rsp to network---" << std::endl;
     put_rsp(rsp_buf);
 }
 
