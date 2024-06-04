@@ -113,9 +113,9 @@ struct DATA_WORD
 
 struct MSG
 {
-    int id; // Every req/fwd has an unique id, rsp has an id same with its corrsponding rsp/fwd.
+    int id; // Every req/prb has a unique id, rsp has an id same with its corrsponding rsp/prb.
     // LSB 00:line/word0?
-    mask_t mask;   // if all the line is ready;
+    mask_t mask;   // bitmask;
     id_num_t src;  // self number;
     id_bit_t dest; // Destination"s" of the request;
     addr_t addr;   // Used when it needs data instead of just ownership.
@@ -126,7 +126,7 @@ struct MSG
     bool gran; // 0 for word granularity, 1 for line granularity;
     // word_offset_t offset; // Used when it is a line granularity req.
     // no need, offset only for one, but mask_t for multiple words in a line;
-    mask_t ok_mask; // only used for a multiple-word req to find its rsp collecting condition;
+    mask_t ok_mask; // if all the line is ready;
     unstable_state_t u_state;
     // Store the transient states in the req that triggers it instead of the LLC self.
     DATA_LINE data_line;

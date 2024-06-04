@@ -14,6 +14,9 @@ using namespace std;
 // TODO: 负载发出的字粒度请求应当是纯“字粒度”的（通过word_offset标识），然后对于同一行的同类型字粒度请求，由 Spandex 合并为一个 multi-word req;
 // TODO: add case e. 测试 MESI 的 ReqS 及其转发功能;
 // TODO: 原来 address bus 和 data bus 应该分开实现吗！！！
+// TODO: 采用包含性的 LLC ，且所有操作都要经过目录，所以私有 cache 不用 sharer list[Why On-Chip Cache Coherence is Here to Stay];
+// TODO: 读取共享数据时读最近写入者（而不是第一个） 实现“写入者签名”  但是就正确性而言没有必要?
+// TODO: 转发的写命中时间应当是ave而非max
 
 // 将下面几个设置为工程全局变量;
 std::vector<MSG> bus;
